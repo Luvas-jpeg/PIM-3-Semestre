@@ -1,0 +1,38 @@
+import { createBrowserRouter } from 'react-router';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import ProductDetail from './pages/ProductDetail';
+import Cart from './pages/Cart';
+
+export const router = createBrowserRouter([
+  {
+    path: '/',
+    Component: Home,
+  },
+  {
+    path: '/login',
+    Component: Login,
+  },
+  {
+    path: '/product/:id',
+    Component: ProductDetail,
+  },
+  {
+    path: '/cart',
+    Component: Cart,
+  },
+  {
+    path: '*',
+    element: (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-4">404</h1>
+          <p className="text-gray-600 mb-4">Página não encontrada</p>
+          <a href="/" className="text-blue-600 hover:underline">
+            Voltar para a página inicial
+          </a>
+        </div>
+      </div>
+    ),
+  },
+]);
