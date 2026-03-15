@@ -1,6 +1,6 @@
 namespace EquipamentosMedicosApi.DTOs
 {
-    // O que o Front-end envia quando alguém se regista
+    // O que o Front-end envia quando alguém se registra
     public class RegistroDTO
     {
         public string Nome { get; set; } = string.Empty;
@@ -14,5 +14,29 @@ namespace EquipamentosMedicosApi.DTOs
     {
         public string Email { get; set; } = string.Empty;
         public string Senha { get; set; } = string.Empty;
+    }
+
+    // Resposta de produto (evita referências circulares)
+    public class ProductResponseDTO
+    {
+        public int Id { get; set; }
+        public string Nome { get; set; } = string.Empty;
+        public decimal Preco { get; set; }
+        public string TipoProduto { get; set; } = string.Empty;
+        public int Estoque { get; set; }
+    }
+
+    // DTO para criar um pedido
+    public class CreateOrderDTO
+    {
+        public List<OrderItemDTO> Itens { get; set; } = new();
+        public decimal ValorFrete { get; set; }
+    }
+
+    public class OrderItemDTO
+    {
+        public int ProdutoId { get; set; }
+        public int Quantidade { get; set; }
+        public decimal PrecoUnitario { get; set; }
     }
 }

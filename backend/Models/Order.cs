@@ -1,4 +1,3 @@
-using System.Reflection.Metadata;
 
 namespace EquipamentosMedicosApi.Models
 {
@@ -14,6 +13,6 @@ namespace EquipamentosMedicosApi.Models
         // Relacionamentos
         public User? Usuario {get; set;}
         public ICollection<OrderItem> Itens {get; set;} = new List<OrderItem>();
-        public ICollection<Inscricao> InscricoesGeradas {get; set;} = new List<Inscricao>()
+        public ICollection<Inscricao> InscricoesGeradas {get; set;} = new List<Inscricao>();
     }
 }
