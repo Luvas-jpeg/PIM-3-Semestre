@@ -18,24 +18,7 @@ namespace EquipamentosMedicosApi.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configuração de precisão decimal para SQLite
-            modelBuilder.Entity<Product>()
-                .Property(p => p.Preco)
-                .HasColumnType("TEXT");
-
-            modelBuilder.Entity<Order>()
-                .Property(o => o.Total)
-                .HasColumnType("TEXT");
-
-            modelBuilder.Entity<Order>()
-                .Property(o => o.ValorFrete)
-                .HasColumnType("TEXT");
-
-            modelBuilder.Entity<OrderItem>()
-                .Property(oi => oi.PrecoUnitario)
-                .HasColumnType("TEXT");
-
-            // Seed de dados — os mesmos produtos do frontend
+            // Seed de dados
             modelBuilder.Entity<Product>().HasData(
                 new Product { Id = 1, Nome = "Estetoscópio Profissional", Preco = 289.90m, TipoProduto = "equipment", Estoque = 15 },
                 new Product { Id = 2, Nome = "Monitor de Sinais Vitais", Preco = 3599.00m, TipoProduto = "equipment", Estoque = 8 },
