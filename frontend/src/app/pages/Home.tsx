@@ -2,17 +2,65 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { Header } from '../components/Header';
 import { ProductCard } from '../components/ProductCard';
-import { products } from '../data/products';
+import { fetchProducts, Product } from '../services/api';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Search } from 'lucide-react';
+import { toast } from 'sonner';
+
+// Mapear tipo de API para tipo local
+interface LocalProduct {
+  id: string;
+  name: string;
+  price: number;
+  type: 'equipment' | 'course';
+  image: string;
+  description: string;
+  category?: string;
+  stock?: number;
+}
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'equipment' | 'course'>('all');
+  const [products, setProducts] = useState<LocalProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Carregar produtos da API
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setIsLoading(true);
+        const tipo = filter === 'all' ? undefined : filter;
+        const apiProducts = await fetchProducts(tipo);
+
+        // Converter dados da API para o formato local
+        const localProducts: LocalProduct[] = apiProducts.map((p: Product) => ({
+          id: p.id.toString(),
+          name: p.nome,
+          price: p.preco,
+          type: p.tipoProduto === 'equipment' ? 'equipment' : 'course',
+          image: p.image,
+          description: p.description,
+          category: p.category,
+          stock: p.estoque,
+        }));
+
+        setProducts(localProducts);
+      } catch (error) {
+        toast.error('Erro ao carregar produtos');
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, [filter]);
+
+  // Carregar filter param da URL
   useEffect(() => {
     const filterParam = searchParams.get('filter');
     if (filterParam === 'equipment' || filterParam === 'course') {
@@ -50,7 +98,7 @@ export default function Home() {
             <p className="text-xl mb-8 text-pink-100">
               Tudo que você precisa para sua carreira na área da saúde em um só lugar
             </p>
-            
+
             {/* Search Bar */}
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -81,13 +129,21 @@ export default function Home() {
 
         {/* Results Count */}
         <div className="mb-6">
-          <p className="text-gray-600">
-            {filteredProducts.length} {filteredProducts.length === 1 ? 'resultado encontrado' : 'resultados encontrados'}
-          </p>
+          {isLoading ? (
+            <p className="text-gray-600">Carregando produtos...</p>
+          ) : (
+            <p className="text-gray-600">
+              {filteredProducts.length} {filteredProducts.length === 1 ? 'resultado encontrado' : 'resultados encontrados'}
+            </p>
+          )}
         </div>
 
         {/* Products Grid */}
-        {filteredProducts.length > 0 ? (
+        {isLoading ? (
+          <div className="text-center py-16">
+            <p className="text-gray-500">Carregando...</p>
+          </div>
+        ) : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
