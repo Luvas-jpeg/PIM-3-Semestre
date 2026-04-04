@@ -24,6 +24,9 @@ namespace EquipamentosMedicosApi.DTOs
         public decimal Preco { get; set; }
         public string TipoProduto { get; set; } = string.Empty;
         public int Estoque { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public string Image { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
     }
 
     // DTO para criar um pedido

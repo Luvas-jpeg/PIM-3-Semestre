@@ -7,6 +7,9 @@ namespace EquipamentosMedicosApi.Models
         public decimal Preco {get; set;}
         public string TipoProduto {get; set;} = string.Empty;
         public int? Estoque {get; set;}
+        public string Description {get; set;} = string.Empty;
+        public string Image {get; set;} = string.Empty;
+        public string Category {get; set;} = string.Empty;
 
         public ICollection<CourseClass>  Turmas {get; set;} = new List<CourseClass>();
     }
