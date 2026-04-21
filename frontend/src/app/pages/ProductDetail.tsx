@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent } from '../components/ui/card';
 import { Separator } from '../components/ui/separator';
-import { products } from '../data/products';
+import { useAdmin } from '../context/AdminContext';
 import { useCart } from '../context/CartContext';
 import { ShoppingCart, Calendar, MapPin, User, Package, Award, Clock, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { products } = useAdmin();
 
   const product = products.find((p) => p.id === id);
 

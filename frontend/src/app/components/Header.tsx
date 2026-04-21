@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router';
-import { ShoppingCart, User, Heart, Menu } from 'lucide-react';
+import { ShoppingCart, User, Heart, Menu, LayoutDashboard } from 'lucide-react';
 import { Button } from './ui/button';
 import { useCart } from '../context/CartContext';
 import { Badge } from './ui/badge';
@@ -43,6 +43,13 @@ export function Header() {
             </Link>
             <Link to="/?filter=course" className="text-sm font-medium transition-colors hover:text-pink-600">
               Cursos
+            </Link>
+            <Link
+              to="/admin"
+              className="text-sm font-medium transition-colors hover:text-purple-600 flex items-center gap-1"
+            >
+              <LayoutDashboard className="size-4" />
+              Admin
             </Link>
           </nav>
 
@@ -89,6 +96,13 @@ export function Header() {
                   </Link>
                   <Link to="/?filter=course" className="text-lg font-medium transition-colors hover:text-pink-600">
                     Cursos
+                  </Link>
+                  <Link
+                    to="/admin"
+                    className="text-lg font-medium transition-colors hover:text-purple-600 flex items-center gap-2"
+                  >
+                    <LayoutDashboard className="size-5" />
+                    Admin
                   </Link>
                   {!isLoggedIn && (
                     <Button onClick={() => navigate('/login')} className="w-full mt-4">
