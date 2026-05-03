@@ -6,40 +6,18 @@ import { Separator } from '../components/ui/separator';
 import { useCart } from '../context/CartContext';
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '../context/AuthContext';
-import { createOrder } from '../lib/api';
-import { useState } from 'react';
 
 export default function Cart() {
   const navigate = useNavigate();
   const { cart, removeFromCart, updateQuantity, clearCart, total } = useCart();
-  const { isAuthenticated } = useAuth();
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (cart.length === 0) {
       toast.error('Seu carrinho está vazio');
       return;
     }
 
-    if (!isAuthenticated) {
-      toast.error('Faça login para finalizar a compra.');
-      navigate('/login', { state: { from: '/cart' } });
-      return;
-    }
-
-    setIsCheckingOut(true);
-
-    try {
-      const order = await createOrder(cart);
-      toast.success(order.message || 'Pedido realizado com sucesso!');
-      clearCart();
-      navigate('/');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao finalizar pedido.');
-    } finally {
-      setIsCheckingOut(false);
-    }
+    navigate('/checkout');
   };
 
   if (cart.length === 0) {
@@ -215,8 +193,8 @@ export default function Cart() {
                 </div>
               </CardContent>
               <CardFooter className="flex-col gap-2">
-                <Button className="w-full" size="lg" onClick={handleCheckout} disabled={isCheckingOut}>
-                  {isCheckingOut ? 'Finalizando...' : 'Finalizar Compra'}
+                <Button className="w-full" size="lg" onClick={handleCheckout}>
+                  Finalizar Compra
                 </Button>
                 <Button
                   variant="outline"

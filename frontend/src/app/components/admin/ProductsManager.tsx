@@ -36,12 +36,11 @@ import { Product } from '../../context/CartContext';
 import { toast } from 'sonner';
 
 export function ProductsManager() {
-  const { products, isLoadingProducts, productsError, refreshProducts, addProduct, updateProduct, deleteProduct } = useAdmin();
+  const { products, addProduct, updateProduct, deleteProduct } = useAdmin();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -64,33 +63,25 @@ export function ProductsManager() {
     });
   };
 
-  const handleAdd = async () => {
+  const handleAdd = () => {
     if (!formData.name || !formData.price || !formData.description) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
-    setIsSaving(true);
+    addProduct({
+      name: formData.name,
+      price: parseFloat(formData.price),
+      description: formData.description,
+      category: formData.category,
+      stock: parseInt(formData.stock) || 0,
+      image: formData.image || 'https://images.unsplash.com/photo-1655313719612-8248b2c4d1e7',
+      type: 'equipment'
+    });
 
-    try {
-      await addProduct({
-        name: formData.name,
-        price: parseFloat(formData.price),
-        description: formData.description,
-        category: formData.category,
-        stock: parseInt(formData.stock) || 0,
-        image: formData.image || 'https://images.unsplash.com/photo-1655313719612-8248b2c4d1e7',
-        type: 'equipment'
-      });
-
-      toast.success('Equipamento adicionado com sucesso!');
-      setIsAddDialogOpen(false);
-      resetForm();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao adicionar equipamento.');
-    } finally {
-      setIsSaving(false);
-    }
+    toast.success('Equipamento adicionado com sucesso!');
+    setIsAddDialogOpen(false);
+    resetForm();
   };
 
   const handleEdit = (product: Product) => {
@@ -106,7 +97,7 @@ export function ProductsManager() {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdate = async () => {
+  const handleUpdate = () => {
     if (!selectedProduct) return;
 
     if (!formData.name || !formData.price || !formData.description) {
@@ -114,40 +105,27 @@ export function ProductsManager() {
       return;
     }
 
-    setIsSaving(true);
+    updateProduct(selectedProduct.id, {
+      name: formData.name,
+      price: parseFloat(formData.price),
+      description: formData.description,
+      category: formData.category,
+      stock: parseInt(formData.stock) || 0,
+      image: formData.image
+    });
 
-    try {
-      await updateProduct(selectedProduct.id, {
-        name: formData.name,
-        price: parseFloat(formData.price),
-        description: formData.description,
-        category: formData.category,
-        stock: parseInt(formData.stock) || 0,
-        image: formData.image
-      });
-
-      toast.success('Equipamento atualizado com sucesso!');
-      setIsEditDialogOpen(false);
-      setSelectedProduct(null);
-      resetForm();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar equipamento.');
-    } finally {
-      setIsSaving(false);
-    }
+    toast.success('Equipamento atualizado com sucesso!');
+    setIsEditDialogOpen(false);
+    setSelectedProduct(null);
+    resetForm();
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = () => {
     if (!selectedProduct) return;
-
-    try {
-      await deleteProduct(selectedProduct.id);
-      toast.success('Equipamento excluído com sucesso!');
-      setIsDeleteDialogOpen(false);
-      setSelectedProduct(null);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao excluir equipamento.');
-    }
+    deleteProduct(selectedProduct.id);
+    toast.success('Equipamento excluído com sucesso!');
+    setIsDeleteDialogOpen(false);
+    setSelectedProduct(null);
   };
 
   return (
@@ -249,28 +227,15 @@ export function ProductsManager() {
               </Button>
               <Button
                 onClick={handleAdd}
-                disabled={isSaving}
                 className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700"
               >
-                {isSaving ? 'Adicionando...' : 'Adicionar'}
+                Adicionar
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      {isLoadingProducts && (
-        <div className="py-12 text-center text-gray-600">Carregando equipamentos...</div>
-      )}
-
-      {productsError && !isLoadingProducts && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-          <p className="text-red-700 mb-4">{productsError}</p>
-          <Button variant="outline" onClick={refreshProducts}>Tentar novamente</Button>
-        </div>
-      )}
-
-      {!isLoadingProducts && !productsError && (
       <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
@@ -321,7 +286,6 @@ export function ProductsManager() {
           </TableBody>
         </Table>
       </div>
-      )}
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -401,10 +365,9 @@ export function ProductsManager() {
             </Button>
             <Button
               onClick={handleUpdate}
-              disabled={isSaving}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
             >
-              {isSaving ? 'Atualizando...' : 'Atualizar'}
+              Atualizar
             </Button>
           </DialogFooter>
         </DialogContent>

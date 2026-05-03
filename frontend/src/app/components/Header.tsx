@@ -2,13 +2,13 @@ import { Link, useNavigate } from 'react-router';
 import { ShoppingCart, User, Heart, Menu, LayoutDashboard } from 'lucide-react';
 import { Button } from './ui/button';
 import { useCart } from '../context/CartContext';
+import { useUser } from '../context/UserContext';
 import { Badge } from './ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
-import { useAuth } from '../context/AuthContext';
 
 export function Header() {
   const { cart } = useCart();
-  const { isAuthenticated, logout, user } = useAuth();
+  const { isAuthenticated, logout } = useUser();
   const navigate = useNavigate();
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -44,6 +44,11 @@ export function Header() {
             <Link to="/?filter=course" className="text-sm font-medium transition-colors hover:text-pink-600">
               Cursos
             </Link>
+            {isAuthenticated && (
+              <Link to="/profile" className="text-sm font-medium transition-colors hover:text-pink-600">
+                Meu Perfil
+              </Link>
+            )}
             <Link
               to="/admin"
               className="text-sm font-medium transition-colors hover:text-purple-600 flex items-center gap-1"
@@ -70,9 +75,8 @@ export function Header() {
             </Button>
 
             {isAuthenticated ? (
-              <Button variant="ghost" onClick={handleLogout} className="hidden md:inline-flex">
+              <Button variant="ghost" size="icon" onClick={() => navigate('/profile')}>
                 <User className="size-5" />
-                {user?.nome?.split(' ')[0] || 'Sair'}
               </Button>
             ) : (
               <Button onClick={() => navigate('/login')} className="hidden md:inline-flex">
@@ -106,9 +110,15 @@ export function Header() {
                     Admin
                   </Link>
                   {isAuthenticated ? (
-                    <Button onClick={handleLogout} className="w-full mt-4">
-                      Sair
-                    </Button>
+                    <>
+                      <Link to="/profile" className="text-lg font-medium transition-colors hover:text-pink-600 flex items-center gap-2">
+                        <User className="size-5" />
+                        Meu Perfil
+                      </Link>
+                      <Button onClick={handleLogout} variant="outline" className="w-full mt-4">
+                        Sair
+                      </Button>
+                    </>
                   ) : (
                     <Button onClick={() => navigate('/login')} className="w-full mt-4">
                       Entrar

@@ -3,7 +3,9 @@ import { Header } from '../components/Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { ProductsManager } from '../components/admin/ProductsManager';
 import { CoursesManager } from '../components/admin/CoursesManager';
-import { LayoutDashboard, Package, GraduationCap } from 'lucide-react';
+import { StudentsManager } from '../components/admin/StudentsManager';
+import { PromoCodesManager } from '../components/admin/PromoCodesManager';
+import { LayoutDashboard, Package, GraduationCap, Users, Tag } from 'lucide-react';
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState('products');
@@ -20,7 +22,7 @@ export default function Admin() {
             <h1 className="text-4xl font-bold">Painel Administrativo</h1>
           </div>
           <p className="text-pink-100 text-lg">
-            Gerencie equipamentos e cursos da plataforma
+            Gerencie produtos, cursos, alunos e promoções da plataforma
           </p>
         </div>
       </div>
@@ -28,7 +30,7 @@ export default function Admin() {
       {/* Admin Content */}
       <div className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-xl mx-auto grid-cols-2 mb-8">
+          <TabsList className="grid w-full max-w-3xl mx-auto grid-cols-4 mb-8">
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Package className="size-4" />
               Equipamentos
@@ -36,6 +38,14 @@ export default function Admin() {
             <TabsTrigger value="courses" className="flex items-center gap-2">
               <GraduationCap className="size-4" />
               Cursos
+            </TabsTrigger>
+            <TabsTrigger value="students" className="flex items-center gap-2">
+              <Users className="size-4" />
+              Alunos
+            </TabsTrigger>
+            <TabsTrigger value="promocodes" className="flex items-center gap-2">
+              <Tag className="size-4" />
+              Promoções
             </TabsTrigger>
           </TabsList>
 
@@ -47,6 +57,13 @@ export default function Admin() {
             <CoursesManager />
           </TabsContent>
 
+          <TabsContent value="students">
+            <StudentsManager />
+          </TabsContent>
+
+          <TabsContent value="promocodes">
+            <PromoCodesManager />
+          </TabsContent>
         </Tabs>
       </div>
     </div>

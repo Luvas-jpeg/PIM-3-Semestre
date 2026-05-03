@@ -36,12 +36,11 @@ import { Product } from '../../context/CartContext';
 import { toast } from 'sonner';
 
 export function CoursesManager() {
-  const { products, isLoadingProducts, productsError, refreshProducts, addProduct, updateProduct, deleteProduct } = useAdmin();
+  const { products, addProduct, updateProduct, deleteProduct } = useAdmin();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Product | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -68,35 +67,27 @@ export function CoursesManager() {
     });
   };
 
-  const handleAdd = async () => {
+  const handleAdd = () => {
     if (!formData.name || !formData.price || !formData.description || !formData.date) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
-    setIsSaving(true);
+    addProduct({
+      name: formData.name,
+      price: parseFloat(formData.price),
+      description: formData.description,
+      date: formData.date,
+      location: formData.location,
+      instructor: formData.instructor,
+      stock: parseInt(formData.stock) || 0,
+      image: formData.image || 'https://images.unsplash.com/photo-1622115585848-1d5b6e8af4e4',
+      type: 'course'
+    });
 
-    try {
-      await addProduct({
-        name: formData.name,
-        price: parseFloat(formData.price),
-        description: formData.description,
-        date: formData.date,
-        location: formData.location,
-        instructor: formData.instructor,
-        stock: parseInt(formData.stock) || 0,
-        image: formData.image || 'https://images.unsplash.com/photo-1622115585848-1d5b6e8af4e4',
-        type: 'course'
-      });
-
-      toast.success('Curso adicionado com sucesso!');
-      setIsAddDialogOpen(false);
-      resetForm();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao adicionar curso.');
-    } finally {
-      setIsSaving(false);
-    }
+    toast.success('Curso adicionado com sucesso!');
+    setIsAddDialogOpen(false);
+    resetForm();
   };
 
   const handleEdit = (course: Product) => {
@@ -114,7 +105,7 @@ export function CoursesManager() {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdate = async () => {
+  const handleUpdate = () => {
     if (!selectedCourse) return;
 
     if (!formData.name || !formData.price || !formData.description || !formData.date) {
@@ -122,42 +113,29 @@ export function CoursesManager() {
       return;
     }
 
-    setIsSaving(true);
+    updateProduct(selectedCourse.id, {
+      name: formData.name,
+      price: parseFloat(formData.price),
+      description: formData.description,
+      date: formData.date,
+      location: formData.location,
+      instructor: formData.instructor,
+      stock: parseInt(formData.stock) || 0,
+      image: formData.image
+    });
 
-    try {
-      await updateProduct(selectedCourse.id, {
-        name: formData.name,
-        price: parseFloat(formData.price),
-        description: formData.description,
-        date: formData.date,
-        location: formData.location,
-        instructor: formData.instructor,
-        stock: parseInt(formData.stock) || 0,
-        image: formData.image
-      });
-
-      toast.success('Curso atualizado com sucesso!');
-      setIsEditDialogOpen(false);
-      setSelectedCourse(null);
-      resetForm();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar curso.');
-    } finally {
-      setIsSaving(false);
-    }
+    toast.success('Curso atualizado com sucesso!');
+    setIsEditDialogOpen(false);
+    setSelectedCourse(null);
+    resetForm();
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = () => {
     if (!selectedCourse) return;
-
-    try {
-      await deleteProduct(selectedCourse.id);
-      toast.success('Curso excluído com sucesso!');
-      setIsDeleteDialogOpen(false);
-      setSelectedCourse(null);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao excluir curso.');
-    }
+    deleteProduct(selectedCourse.id);
+    toast.success('Curso excluído com sucesso!');
+    setIsDeleteDialogOpen(false);
+    setSelectedCourse(null);
   };
 
   return (
@@ -279,28 +257,15 @@ export function CoursesManager() {
               </Button>
               <Button
                 onClick={handleAdd}
-                disabled={isSaving}
                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
               >
-                {isSaving ? 'Adicionando...' : 'Adicionar'}
+                Adicionar
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      {isLoadingProducts && (
-        <div className="py-12 text-center text-gray-600">Carregando cursos...</div>
-      )}
-
-      {productsError && !isLoadingProducts && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-          <p className="text-red-700 mb-4">{productsError}</p>
-          <Button variant="outline" onClick={refreshProducts}>Tentar novamente</Button>
-        </div>
-      )}
-
-      {!isLoadingProducts && !productsError && (
       <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
@@ -373,7 +338,6 @@ export function CoursesManager() {
           </TableBody>
         </Table>
       </div>
-      )}
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -471,10 +435,9 @@ export function CoursesManager() {
             </Button>
             <Button
               onClick={handleUpdate}
-              disabled={isSaving}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
             >
-              {isSaving ? 'Atualizando...' : 'Atualizar'}
+              Atualizar
             </Button>
           </DialogFooter>
         </DialogContent>
