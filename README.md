@@ -1,61 +1,181 @@
----
+# MediShop - PIM 3º Semestre
 
-## 1. Storytelling (A Jornada do Usuário)
+MediShop é uma aplicação web para venda de equipamentos médicos e cursos presenciais na área da saúde. O projeto combina um frontend em React com uma API ASP.NET Core, usando PostgreSQL via Entity Framework Core.
 
-**O Personagem:** Dr. Roberto, um cardiologista que acabou de abrir sua própria clínica.
-**O Conflito:** Ele precisa de um monitor cardíaco de alta precisão com urgência, mas está no meio de uma rodada de consultas e só tem o celular em mãos.
-**A Jornada:** 1. Roberto acessa o site (que carrega perfeitamente em seu smartphone graças ao **CSS responsivo**).
-2. Ele navega pelas categorias e encontra o monitor ideal. Sem perder tempo com cadastros, ele o adiciona ao **carrinho**.
-3. Ao decidir finalizar a compra, o sistema solicita o **login**. Como ele é um novo usuário, ele se cadastra rapidamente.
-4. O sistema valida suas credenciais e o leva diretamente para o checkout, onde seus itens já o aguardavam.
-**O Desfecho:** Roberto finaliza a compra com segurança e recebe a confirmação por e-mail, voltando para seus pacientes sem estresse.
+## Funcionalidades
 
----
+- Catálogo público de equipamentos e cursos.
+- Busca e filtro por tipo de item.
+- Detalhe de produto/curso.
+- Carrinho de compras persistido no navegador.
+- Cadastro e login com autenticação JWT.
+- Fechamento de pedido somente para usuários autenticados.
+- Painel administrativo para criar, editar e excluir equipamentos e cursos.
 
-## 2. Análise de Requisitos
+## Tecnologias
 
-### Requisitos Funcionais (RF)
+| Camada | Tecnologia |
+| --- | --- |
+| Frontend | React, Vite, Tailwind CSS, Radix UI, lucide-react |
+| Backend | ASP.NET Core Web API, C# |
+| Banco de dados | PostgreSQL |
+| ORM | Entity Framework Core |
+| Autenticação | JWT + BCrypt |
 
-* **RF01:** O sistema deve permitir a navegação por produtos sem autenticação.
-* **RF02:** O sistema deve permitir adicionar produtos ao carrinho de forma anônima.
-* **RF03:** O sistema deve exigir login/cadastro para o fechamento do pedido.
-* **RF04:** O sistema deve persistir os dados do carrinho após o login.
+## Estrutura do Projeto
 
-### Requisitos Não Funcionais (RNF)
+```text
+.
+├── backend/              # API ASP.NET Core
+│   ├── Controllers/      # Auth, Products e Orders
+│   ├── Data/             # AppDbContext
+│   ├── DTOs/             # Contratos de entrada/saida
+│   ├── Migrations/       # Migrations do Entity Framework
+│   └── Models/           # Entidades do dominio
+├── frontend/             # Aplicacao React/Vite
+│   ├── src/app/components
+│   ├── src/app/context
+│   ├── src/app/lib       # Cliente HTTP da API
+│   └── src/app/pages
+└── PIM-3-Semestre.sln
+```
 
-* **RNF01:** O frontend deve utilizar tags semânticas (HTML5) para SEO e acessibilidade.
-* **RNF02:** O layout deve ser responsivo (Mobile First).
-* **RNF03:** O backend deve ser desenvolvido em ASP.NET Core (C#).
-* **RNF04:** O banco de dados deve ser relacional (**PostgreSQL** é altamente recomendado pela integração nativa com o Entity Framework).
+## Pré-requisitos
 
----
+- .NET SDK 10.
+- Node.js 20 ou superior. O projeto usa Vite 6 e React Router 7, que não funcionam corretamente em Node 16.
+- PostgreSQL acessível pela connection string do backend.
 
-## 3. Diagrama UML (Casos de Uso)
+## Configuração do Backend
 
-Este diagrama ilustra como o usuário interage com o sistema e onde a barreira de autenticação se aplica.
+O backend lê a connection string em `backend/appsettings.json`:
 
----
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=...;Port=5432;Database=...;User Id=...;Password=...;"
+  }
+}
+```
 
-## 4. Arquitetura Técnica Sugerida
+Para ambiente local, o ideal é mover credenciais sensíveis para `appsettings.Development.json`, variáveis de ambiente ou user-secrets do .NET.
 
-Para este projeto, a estrutura ideal seria:
+Ao iniciar, a API executa automaticamente as migrations:
 
-| Camada | Tecnologia | Motivo |
+```bash
+dotnet run --project backend/backend.csproj
+```
+
+Por padrão, a API sobe em:
+
+```text
+http://localhost:5278
+```
+
+## Configuração do Frontend
+
+Instale as dependências:
+
+```bash
+cd frontend
+npm install
+```
+
+Rode o servidor de desenvolvimento:
+
+```bash
+npm run dev
+```
+
+Por padrão, o frontend sobe em:
+
+```text
+http://localhost:5173
+```
+
+O frontend usa `http://localhost:5278/api` como URL padrão da API. Para alterar:
+
+```bash
+VITE_API_BASE_URL=http://localhost:5278/api npm run dev
+```
+
+## Como Rodar o Projeto
+
+Em um terminal, inicie o backend:
+
+```bash
+dotnet run --project backend/backend.csproj
+```
+
+Em outro terminal, inicie o frontend:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Acesse:
+
+```text
+http://localhost:5173
+```
+
+## Endpoints Principais
+
+### Autenticação
+
+| Método | Rota | Descrição |
 | --- | --- | --- |
-| **Frontend** | HTML5 / CSS3 (Grid & Flexbox) | Semântica pura e performance. |
-| **Backend** | ASP.NET Core MVC ou Web API | Escalabilidade e segurança do C#. |
-| **ORM** | Entity Framework Core | Facilita a comunicação entre C# e o Banco de Dados. |
-| **Banco de Dados** | PostgreSQL | Excelente suporte a tipos de dados complexos e robustez. |
+| POST | `/api/Auth/cadastrar` | Cria um novo usuário |
+| POST | `/api/Auth/login` | Autentica e retorna JWT |
 
----
+### Produtos e Cursos
 
-## 5. Estrutura de Dados (Modelo de Entidade)
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| GET | `/api/Products` | Lista todos os produtos/cursos |
+| GET | `/api/Products?tipo=equipment` | Lista equipamentos |
+| GET | `/api/Products?tipo=course` | Lista cursos |
+| GET | `/api/Products/{id}` | Busca item por ID |
+| POST | `/api/Products` | Cria item autenticado |
+| PUT | `/api/Products/{id}` | Atualiza item autenticado |
+| DELETE | `/api/Products/{id}` | Remove item autenticado |
 
-Para o seu banco de dados, você precisará de pelo menos quatro tabelas principais:
+### Pedidos
 
-1. **Users:** `Id, Nome, Email, SenhaHash, Cargo`
-2. **Products:** `Id, Nome, Descricao, Preco, Estoque, Categoria`
-3. **CartItems:** `Id, UsuarioId (nullable), ProdutoId, Quantidade, SessaoTemporariaId`
-4. **Orders:** `Id, UsuarioId, DataPedido, Status, Total`
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| POST | `/api/Orders` | Cria pedido autenticado |
+| GET | `/api/Orders/my` | Lista pedidos do usuário autenticado |
 
----
+## Fluxo da Aplicação
+
+1. O usuário navega pelo catálogo sem login.
+2. O usuário adiciona equipamentos ou cursos ao carrinho.
+3. O carrinho fica salvo no navegador.
+4. Ao finalizar a compra, se não estiver autenticado, o usuário é enviado para login/cadastro.
+5. Após autenticação, o carrinho continua disponível.
+6. O frontend envia o pedido para a API com o JWT.
+7. A API grava o pedido e seus itens no banco.
+
+## Observações
+
+- O painel administrativo ainda não possui controle de perfil. Qualquer usuário autenticado consegue usar as rotas protegidas de produtos.
+- A gestão de alunos/inscrições foi removida da interface administrativa até existirem endpoints completos no backend.
+- O arquivo `backend/medishop.db` existe no repositório, mas a aplicação atual usa PostgreSQL via Npgsql.
+- As imagens iniciais dos produtos usam URLs externas.
+
+## Verificação
+
+Backend:
+
+```bash
+dotnet build backend/backend.csproj
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run build
+```

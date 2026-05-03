@@ -3,18 +3,18 @@ import { ShoppingCart, User, Heart, Menu, LayoutDashboard } from 'lucide-react';
 import { Button } from './ui/button';
 import { useCart } from '../context/CartContext';
 import { Badge } from './ui/badge';
-import { useState } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
+import { useAuth } from '../context/AuthContext';
 
 export function Header() {
   const { cart } = useCart();
+  const { isAuthenticated, logout, user } = useAuth();
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
+    logout();
     navigate('/login');
   };
 
@@ -69,9 +69,10 @@ export function Header() {
               )}
             </Button>
 
-            {isLoggedIn ? (
-              <Button variant="ghost" size="icon" onClick={handleLogout}>
+            {isAuthenticated ? (
+              <Button variant="ghost" onClick={handleLogout} className="hidden md:inline-flex">
                 <User className="size-5" />
+                {user?.nome?.split(' ')[0] || 'Sair'}
               </Button>
             ) : (
               <Button onClick={() => navigate('/login')} className="hidden md:inline-flex">
@@ -104,7 +105,11 @@ export function Header() {
                     <LayoutDashboard className="size-5" />
                     Admin
                   </Link>
-                  {!isLoggedIn && (
+                  {isAuthenticated ? (
+                    <Button onClick={handleLogout} className="w-full mt-4">
+                      Sair
+                    </Button>
+                  ) : (
                     <Button onClick={() => navigate('/login')} className="w-full mt-4">
                       Entrar
                     </Button>

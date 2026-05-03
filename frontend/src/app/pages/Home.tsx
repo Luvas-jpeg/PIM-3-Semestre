@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Search } from 'lucide-react';
 
 export default function Home() {
-  const { products } = useAdmin();
+  const { products, isLoadingProducts, productsError, refreshProducts } = useAdmin();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'equipment' | 'course'>('all');
@@ -80,21 +80,36 @@ export default function Home() {
           </TabsList>
         </Tabs>
 
-        {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-gray-600">
-            {filteredProducts.length} {filteredProducts.length === 1 ? 'resultado encontrado' : 'resultados encontrados'}
-          </p>
-        </div>
+        {isLoadingProducts && (
+          <div className="py-16 text-center text-gray-600">
+            Carregando produtos...
+          </div>
+        )}
+
+        {productsError && !isLoadingProducts && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+            <p className="text-red-700 mb-4">{productsError}</p>
+            <Button variant="outline" onClick={refreshProducts}>
+              Tentar novamente
+            </Button>
+          </div>
+        )}
 
         {/* Products Grid */}
-        {filteredProducts.length > 0 ? (
+        {!isLoadingProducts && !productsError && filteredProducts.length > 0 ? (
+          <>
+            <div className="mb-6">
+              <p className="text-gray-600">
+                {filteredProducts.length} {filteredProducts.length === 1 ? 'resultado encontrado' : 'resultados encontrados'}
+              </p>
+            </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
-        ) : (
+          </>
+        ) : !isLoadingProducts && !productsError ? (
           <div className="text-center py-16">
             <p className="text-gray-500 text-lg">Nenhum produto encontrado</p>
             <Button
@@ -108,7 +123,7 @@ export default function Home() {
               Limpar filtros
             </Button>
           </div>
-        )}
+        ) : null}
       </section>
 
       {/* Features Section */}

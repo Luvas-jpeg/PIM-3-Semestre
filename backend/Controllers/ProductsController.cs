@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using EquipamentosMedicosApi.Data;
 using EquipamentosMedicosApi.DTOs;
+using EquipamentosMedicosApi.Models;
 
 namespace EquipamentosMedicosApi.Controllers
 {
@@ -32,7 +34,13 @@ namespace EquipamentosMedicosApi.Controllers
                     Nome = p.Nome,
                     Preco = p.Preco,
                     TipoProduto = p.TipoProduto,
-                    Estoque = p.Estoque ?? 0
+                    Estoque = p.Estoque ?? 0,
+                    Description = p.Description,
+                    Image = p.Image,
+                    Category = p.Category,
+                    Date = p.Date,
+                    Location = p.Location,
+                    Instructor = p.Instructor
                 })
                 .ToListAsync();
 
@@ -43,22 +51,113 @@ namespace EquipamentosMedicosApi.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var product = await _context.Products
-                .Where(p => p.Id == id)
-                .Select(p => new ProductResponseDTO
-                {
-                    Id = p.Id,
-                    Nome = p.Nome,
-                    Preco = p.Preco,
-                    TipoProduto = p.TipoProduto,
-                    Estoque = p.Estoque ?? 0
-                })
-                .FirstOrDefaultAsync();
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
 
             if (product == null)
                 return NotFound(new { message = "Produto não encontrado." });
 
-            return Ok(product);
+            return Ok(ToResponse(product));
+        }
+
+        /// <summary>Cria um produto ou curso</summary>
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> Create([FromBody] ProductRequestDTO request)
+        {
+            var validation = ValidateRequest(request);
+            if (validation != null)
+                return BadRequest(new { message = validation });
+
+            var product = new Product();
+            ApplyRequest(product, request);
+
+            _context.Products.Add(product);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetById), new { id = product.Id }, ToResponse(product));
+        }
+
+        /// <summary>Atualiza um produto ou curso</summary>
+        [HttpPut("{id}")]
+        [Authorize]
+        public async Task<IActionResult> Update(int id, [FromBody] ProductRequestDTO request)
+        {
+            var validation = ValidateRequest(request);
+            if (validation != null)
+                return BadRequest(new { message = validation });
+
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
+            if (product == null)
+                return NotFound(new { message = "Produto não encontrado." });
+
+            ApplyRequest(product, request);
+            await _context.SaveChangesAsync();
+
+            return Ok(ToResponse(product));
+        }
+
+        /// <summary>Remove um produto ou curso</summary>
+        [HttpDelete("{id}")]
+        [Authorize]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
+            if (product == null)
+                return NotFound(new { message = "Produto não encontrado." });
+
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        private static ProductResponseDTO ToResponse(Product product)
+        {
+            return new ProductResponseDTO
+            {
+                Id = product.Id,
+                Nome = product.Nome,
+                Preco = product.Preco,
+                TipoProduto = product.TipoProduto,
+                Estoque = product.Estoque ?? 0,
+                Description = product.Description,
+                Image = product.Image,
+                Category = product.Category,
+                Date = product.Date,
+                Location = product.Location,
+                Instructor = product.Instructor
+            };
+        }
+
+        private static void ApplyRequest(Product product, ProductRequestDTO request)
+        {
+            product.Nome = request.Nome.Trim();
+            product.Preco = request.Preco;
+            product.TipoProduto = request.TipoProduto.Trim();
+            product.Estoque = request.Estoque;
+            product.Description = request.Description.Trim();
+            product.Image = request.Image.Trim();
+            product.Category = request.Category.Trim();
+            product.Date = request.Date.Trim();
+            product.Location = request.Location.Trim();
+            product.Instructor = request.Instructor.Trim();
+        }
+
+        private static string? ValidateRequest(ProductRequestDTO request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Nome))
+                return "Nome é obrigatório.";
+
+            if (request.Preco < 0)
+                return "Preço não pode ser negativo.";
+
+            if (request.TipoProduto != "equipment" && request.TipoProduto != "course")
+                return "TipoProduto deve ser 'equipment' ou 'course'.";
+
+            if (request.Estoque < 0)
+                return "Estoque não pode ser negativo.";
+
+            return null;
         }
     }
 }

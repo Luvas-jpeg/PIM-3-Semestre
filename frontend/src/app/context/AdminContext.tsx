@@ -1,6 +1,11 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Product } from './CartContext';
-import { products as initialProducts } from '../data/products';
+import {
+  createProduct as createProductRequest,
+  deleteProduct as deleteProductRequest,
+  getProducts,
+  updateProduct as updateProductRequest,
+} from '../lib/api';
 
 export interface Student {
   id: string;
@@ -16,9 +21,12 @@ export interface Student {
 interface AdminContextType {
   products: Product[];
   students: Student[];
-  addProduct: (product: Omit<Product, 'id'>) => void;
-  updateProduct: (id: string, product: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
+  isLoadingProducts: boolean;
+  productsError: string | null;
+  refreshProducts: () => Promise<void>;
+  addProduct: (product: Omit<Product, 'id'>) => Promise<Product>;
+  updateProduct: (id: string, product: Partial<Product>) => Promise<Product>;
+  deleteProduct: (id: string) => Promise<void>;
   addStudent: (student: Omit<Student, 'id'>) => void;
   updateStudent: (id: string, student: Partial<Student>) => void;
   deleteStudent: (id: string) => void;
@@ -27,57 +35,44 @@ interface AdminContextType {
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export function AdminProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [students, setStudents] = useState<Student[]>([
-    {
-      id: '1',
-      name: 'João Silva',
-      email: 'joao.silva@email.com',
-      phone: '(11) 98765-4321',
-      courseId: '5',
-      courseName: 'Curso de Primeiros Socorros Básico',
-      enrollmentDate: '10/04/2026',
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Maria Santos',
-      email: 'maria.santos@email.com',
-      phone: '(21) 99876-5432',
-      courseId: '6',
-      courseName: 'Curso de Suporte Avançado de Vida (ACLS)',
-      enrollmentDate: '05/04/2026',
-      status: 'active'
-    },
-    {
-      id: '3',
-      name: 'Pedro Oliveira',
-      email: 'pedro.oliveira@email.com',
-      phone: '(31) 97654-3210',
-      courseId: '7',
-      courseName: 'Workshop de Técnicas de Sutura',
-      enrollmentDate: '28/03/2026',
-      status: 'completed'
+  const [products, setProducts] = useState<Product[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [productsError, setProductsError] = useState<string | null>(null);
+
+  const refreshProducts = async () => {
+    setIsLoadingProducts(true);
+    setProductsError(null);
+
+    try {
+      setProducts(await getProducts());
+    } catch (error) {
+      setProductsError(error instanceof Error ? error.message : 'Erro ao carregar produtos.');
+    } finally {
+      setIsLoadingProducts(false);
     }
-  ]);
+  };
 
-  const addProduct = (product: Omit<Product, 'id'>) => {
-    const newProduct: Product = {
-      ...product,
-      id: Math.random().toString(36).substring(7),
-    };
+  useEffect(() => {
+    void refreshProducts();
+  }, []);
+
+  const addProduct = async (product: Omit<Product, 'id'>) => {
+    const newProduct = await createProductRequest(product);
     setProducts((prev) => [...prev, newProduct]);
+    return newProduct;
   };
 
-  const updateProduct = (id: string, productUpdate: Partial<Product>) => {
+  const updateProduct = async (id: string, productUpdate: Partial<Product>) => {
+    const updatedProduct = await updateProductRequest(id, productUpdate);
     setProducts((prev) =>
-      prev.map((product) =>
-        product.id === id ? { ...product, ...productUpdate } : product
-      )
+      prev.map((product) => (product.id === id ? updatedProduct : product))
     );
+    return updatedProduct;
   };
 
-  const deleteProduct = (id: string) => {
+  const deleteProduct = async (id: string) => {
+    await deleteProductRequest(id);
     setProducts((prev) => prev.filter((product) => product.id !== id));
   };
 
@@ -106,6 +101,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       value={{
         products,
         students,
+        isLoadingProducts,
+        productsError,
+        refreshProducts,
         addProduct,
         updateProduct,
         deleteProduct,

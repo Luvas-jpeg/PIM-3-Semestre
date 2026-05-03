@@ -3,8 +3,7 @@ import { Header } from '../components/Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { ProductsManager } from '../components/admin/ProductsManager';
 import { CoursesManager } from '../components/admin/CoursesManager';
-import { StudentsManager } from '../components/admin/StudentsManager';
-import { LayoutDashboard, Package, GraduationCap, Users } from 'lucide-react';
+import { LayoutDashboard, Package, GraduationCap } from 'lucide-react';
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState('products');
@@ -21,7 +20,7 @@ export default function Admin() {
             <h1 className="text-4xl font-bold">Painel Administrativo</h1>
           </div>
           <p className="text-pink-100 text-lg">
-            Gerencie produtos, cursos e alunos da plataforma
+            Gerencie equipamentos e cursos da plataforma
           </p>
         </div>
       </div>
@@ -29,7 +28,7 @@ export default function Admin() {
       {/* Admin Content */}
       <div className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 mb-8">
+          <TabsList className="grid w-full max-w-xl mx-auto grid-cols-2 mb-8">
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Package className="size-4" />
               Equipamentos
@@ -37,10 +36,6 @@ export default function Admin() {
             <TabsTrigger value="courses" className="flex items-center gap-2">
               <GraduationCap className="size-4" />
               Cursos
-            </TabsTrigger>
-            <TabsTrigger value="students" className="flex items-center gap-2">
-              <Users className="size-4" />
-              Alunos
             </TabsTrigger>
           </TabsList>
 
@@ -52,9 +47,6 @@ export default function Admin() {
             <CoursesManager />
           </TabsContent>
 
-          <TabsContent value="students">
-            <StudentsManager />
-          </TabsContent>
         </Tabs>
       </div>
     </div>

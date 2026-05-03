@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -7,33 +7,57 @@ import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Heart } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login, register } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [registerData, setRegisterData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  const redirectTo = (location.state as { from?: string } | null)?.from || '/';
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulação de login
-    setTimeout(() => {
-      setIsLoading(false);
+
+    try {
+      await login(loginData.email, loginData.password);
       toast.success('Login realizado com sucesso!');
-      navigate('/');
-    }, 1500);
+      navigate(redirectTo);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erro ao fazer login.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (registerData.password !== registerData.confirmPassword) {
+      toast.error('As senhas não conferem.');
+      return;
+    }
+
     setIsLoading(true);
-    
-    // Simulação de cadastro
-    setTimeout(() => {
-      setIsLoading(false);
+
+    try {
+      await register(registerData.name, registerData.email, registerData.password);
       toast.success('Cadastro realizado com sucesso!');
-      navigate('/');
-    }, 1500);
+      navigate(redirectTo);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar conta.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -69,6 +93,8 @@ export default function Login() {
                       id="email"
                       type="email"
                       placeholder="seu@email.com"
+                      value={loginData.email}
+                      onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                       required
                     />
                   </div>
@@ -77,7 +103,9 @@ export default function Login() {
                     <Input
                       id="password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="Digite sua senha"
+                      value={loginData.password}
+                      onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                       required
                     />
                   </div>
@@ -110,6 +138,8 @@ export default function Login() {
                       id="name"
                       type="text"
                       placeholder="João Silva"
+                      value={registerData.name}
+                      onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
                       required
                     />
                   </div>
@@ -119,24 +149,8 @@ export default function Login() {
                       id="register-email"
                       type="email"
                       placeholder="seu@email.com"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cpf">CPF</Label>
-                    <Input
-                      id="cpf"
-                      type="text"
-                      placeholder="000.000.000-00"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="(11) 99999-9999"
+                      value={registerData.email}
+                      onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
                       required
                     />
                   </div>
@@ -145,7 +159,9 @@ export default function Login() {
                     <Input
                       id="register-password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="Digite sua senha"
+                      value={registerData.password}
+                      onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
                       required
                     />
                   </div>
@@ -154,7 +170,9 @@ export default function Login() {
                     <Input
                       id="confirm-password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="Confirme sua senha"
+                      value={registerData.confirmPassword}
+                      onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
                       required
                     />
                   </div>

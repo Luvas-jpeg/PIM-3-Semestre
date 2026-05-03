@@ -13,9 +13,33 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const { products } = useAdmin();
+  const { products, isLoadingProducts, productsError, refreshProducts } = useAdmin();
 
   const product = products.find((p) => p.id === id);
+
+  if (isLoadingProducts) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-4 py-16 text-center text-gray-600">
+          Carregando produto...
+        </div>
+      </div>
+    );
+  }
+
+  if (productsError) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-4 py-16 text-center">
+          <h2 className="text-2xl font-bold mb-4">Erro ao carregar produto</h2>
+          <p className="text-gray-600 mb-6">{productsError}</p>
+          <Button onClick={refreshProducts}>Tentar novamente</Button>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
