@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import { Product } from '../../context/CartContext';
+import type { Product } from '../../context/CartContext';
 import { toast } from 'sonner';
 
 export function ProductsManager() {
@@ -63,25 +63,29 @@ export function ProductsManager() {
     });
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!formData.name || !formData.price || !formData.description) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
-    addProduct({
-      name: formData.name,
-      price: parseFloat(formData.price),
-      description: formData.description,
-      category: formData.category,
-      stock: parseInt(formData.stock) || 0,
-      image: formData.image || 'https://images.unsplash.com/photo-1655313719612-8248b2c4d1e7',
-      type: 'equipment'
-    });
+    try {
+      await addProduct({
+        name: formData.name,
+        price: parseFloat(formData.price),
+        description: formData.description,
+        category: formData.category,
+        stock: parseInt(formData.stock) || 0,
+        image: formData.image || 'https://images.unsplash.com/photo-1655313719612-8248b2c4d1e7',
+        type: 'equipment'
+      });
 
-    toast.success('Equipamento adicionado com sucesso!');
-    setIsAddDialogOpen(false);
-    resetForm();
+      toast.success('Equipamento adicionado com sucesso!');
+      setIsAddDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível adicionar o equipamento');
+    }
   };
 
   const handleEdit = (product: Product) => {
@@ -97,7 +101,7 @@ export function ProductsManager() {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!selectedProduct) return;
 
     if (!formData.name || !formData.price || !formData.description) {
@@ -105,27 +109,35 @@ export function ProductsManager() {
       return;
     }
 
-    updateProduct(selectedProduct.id, {
-      name: formData.name,
-      price: parseFloat(formData.price),
-      description: formData.description,
-      category: formData.category,
-      stock: parseInt(formData.stock) || 0,
-      image: formData.image
-    });
+    try {
+      await updateProduct(selectedProduct.id, {
+        name: formData.name,
+        price: parseFloat(formData.price),
+        description: formData.description,
+        category: formData.category,
+        stock: parseInt(formData.stock) || 0,
+        image: formData.image
+      });
 
-    toast.success('Equipamento atualizado com sucesso!');
-    setIsEditDialogOpen(false);
-    setSelectedProduct(null);
-    resetForm();
+      toast.success('Equipamento atualizado com sucesso!');
+      setIsEditDialogOpen(false);
+      setSelectedProduct(null);
+      resetForm();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível atualizar o equipamento');
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!selectedProduct) return;
-    deleteProduct(selectedProduct.id);
-    toast.success('Equipamento excluído com sucesso!');
-    setIsDeleteDialogOpen(false);
-    setSelectedProduct(null);
+    try {
+      await deleteProduct(selectedProduct.id);
+      toast.success('Equipamento excluído com sucesso!');
+      setIsDeleteDialogOpen(false);
+      setSelectedProduct(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível excluir o equipamento');
+    }
   };
 
   return (

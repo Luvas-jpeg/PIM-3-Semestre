@@ -64,7 +64,10 @@ namespace EquipamentosMedicosApi.Controllers
 
         private string GerarToken(User user)
         {
-            var secret = _config["Jwt:Secret"] ?? "FallbackSecretKeyWith32PlusChars!!!";
+            var secret = _config["Jwt:Secret"];
+            if (string.IsNullOrWhiteSpace(secret))
+                throw new InvalidOperationException("Jwt:Secret não foi configurado.");
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

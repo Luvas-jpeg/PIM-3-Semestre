@@ -59,4 +59,52 @@ namespace EquipamentosMedicosApi.DTOs
         public int Quantidade { get; set; }
         public decimal PrecoUnitario { get; set; }
     }
+
+    public class StudentDTO
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string CourseId { get; set; } = string.Empty;
+        public string CourseName { get; set; } = string.Empty;
+        public string EnrollmentDate { get; set; } = string.Empty;
+        public string Status { get; set; } = "active";
+    }
+
+    public class StudentRequestDTO
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string CourseId { get; set; } = string.Empty;
+        public string CourseName { get; set; } = string.Empty;
+        public string EnrollmentDate { get; set; } = string.Empty;
+        public string Status { get; set; } = "active";
+    }
+
+    public class PromoCodeDTO
+    {
+        public int Id { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public decimal Discount { get; set; }
+        public string DiscountType { get; set; } = "percentage";
+        public string StartDate { get; set; } = string.Empty;
+        public string EndDate { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public int? UsageLimit { get; set; }
+        public int UsageCount { get; set; }
+    }
+
+    public class PromoCodeRequestDTO
+    {
+        public string Code { get; set; } = string.Empty;
+        public decimal Discount { get; set; }
+        public string DiscountType { get; set; } = "percentage";
+        public string StartDate { get; set; } = string.Empty;
+        public string EndDate { get; set; } = string.Empty;
+        public bool IsActive { get; set; } = true;
+        public int? UsageLimit { get; set; }
+        public int UsageCount { get; set; }
+    }
 }

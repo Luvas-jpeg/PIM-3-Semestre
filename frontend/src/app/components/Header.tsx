@@ -49,13 +49,15 @@ export function Header() {
                 Meu Perfil
               </Link>
             )}
-            <Link
-              to="/admin"
-              className="text-sm font-medium transition-colors hover:text-purple-600 flex items-center gap-1"
-            >
-              <LayoutDashboard className="size-4" />
-              Admin
-            </Link>
+            {isAuthenticated && (
+              <Link
+                to="/admin"
+                className="text-sm font-medium transition-colors hover:text-purple-600 flex items-center gap-1"
+              >
+                <LayoutDashboard className="size-4" />
+                Admin
+              </Link>
+            )}
           </nav>
 
           {/* Actions */}
@@ -102,15 +104,15 @@ export function Header() {
                   <Link to="/?filter=course" className="text-lg font-medium transition-colors hover:text-pink-600">
                     Cursos
                   </Link>
-                  <Link
-                    to="/admin"
-                    className="text-lg font-medium transition-colors hover:text-purple-600 flex items-center gap-2"
-                  >
-                    <LayoutDashboard className="size-5" />
-                    Admin
-                  </Link>
                   {isAuthenticated ? (
                     <>
+                      <Link
+                        to="/admin"
+                        className="text-lg font-medium transition-colors hover:text-purple-600 flex items-center gap-2"
+                      >
+                        <LayoutDashboard className="size-5" />
+                        Admin
+                      </Link>
                       <Link to="/profile" className="text-lg font-medium transition-colors hover:text-pink-600 flex items-center gap-2">
                         <User className="size-5" />
                         Meu Perfil

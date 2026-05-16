@@ -71,25 +71,29 @@ export function PromoCodesManager() {
     });
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!formData.code || !formData.discount || !formData.startDate || !formData.endDate) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
-    addPromoCode({
-      code: formData.code.toUpperCase(),
-      discount: parseFloat(formData.discount),
-      discountType: formData.discountType,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      isActive: formData.isActive,
-      usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : undefined
-    });
+    try {
+      await addPromoCode({
+        code: formData.code.toUpperCase(),
+        discount: parseFloat(formData.discount),
+        discountType: formData.discountType,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        isActive: formData.isActive,
+        usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : undefined
+      });
 
-    toast.success('Código promocional criado com sucesso!');
-    setIsAddDialogOpen(false);
-    resetForm();
+      toast.success('Código promocional criado com sucesso!');
+      setIsAddDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível criar o código promocional');
+    }
   };
 
   const handleEdit = (promoCode: PromoCode) => {
@@ -106,7 +110,7 @@ export function PromoCodesManager() {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!selectedPromoCode) return;
 
     if (!formData.code || !formData.discount || !formData.startDate || !formData.endDate) {
@@ -114,28 +118,36 @@ export function PromoCodesManager() {
       return;
     }
 
-    updatePromoCode(selectedPromoCode.id, {
-      code: formData.code.toUpperCase(),
-      discount: parseFloat(formData.discount),
-      discountType: formData.discountType,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      isActive: formData.isActive,
-      usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : undefined
-    });
+    try {
+      await updatePromoCode(selectedPromoCode.id, {
+        code: formData.code.toUpperCase(),
+        discount: parseFloat(formData.discount),
+        discountType: formData.discountType,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        isActive: formData.isActive,
+        usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : undefined
+      });
 
-    toast.success('Código promocional atualizado com sucesso!');
-    setIsEditDialogOpen(false);
-    setSelectedPromoCode(null);
-    resetForm();
+      toast.success('Código promocional atualizado com sucesso!');
+      setIsEditDialogOpen(false);
+      setSelectedPromoCode(null);
+      resetForm();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível atualizar o código promocional');
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!selectedPromoCode) return;
-    deletePromoCode(selectedPromoCode.id);
-    toast.success('Código promocional excluído com sucesso!');
-    setIsDeleteDialogOpen(false);
-    setSelectedPromoCode(null);
+    try {
+      await deletePromoCode(selectedPromoCode.id);
+      toast.success('Código promocional excluído com sucesso!');
+      setIsDeleteDialogOpen(false);
+      setSelectedPromoCode(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível excluir o código promocional');
+    }
   };
 
   const isExpired = (endDate: string) => {

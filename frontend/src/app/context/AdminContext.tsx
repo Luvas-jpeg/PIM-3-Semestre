@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Product } from './CartContext';
-import { products as initialProducts } from '../data/products';
+import React, { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
+import type { Product } from './CartContext';
+import { AUTH_TOKEN_CHANGED_EVENT, getAuthToken, productsApi, promoCodesApi, studentsApi } from '../lib/api';
 
 export interface Student {
   id: string;
@@ -29,154 +29,174 @@ interface AdminContextType {
   products: Product[];
   students: Student[];
   promoCodes: PromoCode[];
-  addProduct: (product: Omit<Product, 'id'>) => void;
-  updateProduct: (id: string, product: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
-  addStudent: (student: Omit<Student, 'id'>) => void;
-  updateStudent: (id: string, student: Partial<Student>) => void;
-  deleteStudent: (id: string) => void;
-  addPromoCode: (promoCode: Omit<PromoCode, 'id' | 'usageCount'>) => void;
-  updatePromoCode: (id: string, promoCode: Partial<PromoCode>) => void;
-  deletePromoCode: (id: string) => void;
-  validatePromoCode: (code: string) => PromoCode | null;
+  isProductsLoading: boolean;
+  isProtectedDataLoading: boolean;
+  productsError: string | null;
+  protectedDataError: string | null;
+  addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
+  updateProduct: (id: string, product: Partial<Product>) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
+  addStudent: (student: Omit<Student, 'id'>) => Promise<void>;
+  updateStudent: (id: string, student: Partial<Student>) => Promise<void>;
+  deleteStudent: (id: string) => Promise<void>;
+  addPromoCode: (promoCode: Omit<PromoCode, 'id' | 'usageCount'>) => Promise<void>;
+  updatePromoCode: (id: string, promoCode: Partial<PromoCode>) => Promise<void>;
+  deletePromoCode: (id: string) => Promise<void>;
+  validatePromoCode: (code: string) => Promise<PromoCode | null>;
+  usePromoCode: (id: string) => Promise<void>;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export function AdminProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([
-    {
-      id: '1',
-      code: 'MEDICO10',
-      discount: 10,
-      discountType: 'percentage',
-      startDate: '2026-04-01',
-      endDate: '2026-12-31',
-      isActive: true,
-      usageLimit: 100,
-      usageCount: 5
-    },
-    {
-      id: '2',
-      code: 'PRIMEIRACOMPRA',
-      discount: 50,
-      discountType: 'fixed',
-      startDate: '2026-01-01',
-      endDate: '2026-12-31',
-      isActive: true,
-      usageCount: 12
-    }
-  ]);
-  const [students, setStudents] = useState<Student[]>([
-    {
-      id: '1',
-      name: 'João Silva',
-      email: 'joao.silva@email.com',
-      phone: '(11) 98765-4321',
-      courseId: '5',
-      courseName: 'Curso de Primeiros Socorros Básico',
-      enrollmentDate: '10/04/2026',
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Maria Santos',
-      email: 'maria.santos@email.com',
-      phone: '(21) 99876-5432',
-      courseId: '6',
-      courseName: 'Curso de Suporte Avançado de Vida (ACLS)',
-      enrollmentDate: '05/04/2026',
-      status: 'active'
-    },
-    {
-      id: '3',
-      name: 'Pedro Oliveira',
-      email: 'pedro.oliveira@email.com',
-      phone: '(31) 97654-3210',
-      courseId: '7',
-      courseName: 'Workshop de Técnicas de Sutura',
-      enrollmentDate: '28/03/2026',
-      status: 'completed'
-    }
-  ]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isProductsLoading, setIsProductsLoading] = useState(true);
+  const [isProtectedDataLoading, setIsProtectedDataLoading] = useState(false);
+  const [productsError, setProductsError] = useState<string | null>(null);
+  const [protectedDataError, setProtectedDataError] = useState<string | null>(null);
 
-  const addProduct = (product: Omit<Product, 'id'>) => {
-    const newProduct: Product = {
-      ...product,
-      id: Math.random().toString(36).substring(7),
+  const refreshProducts = useCallback(async () => {
+    setIsProductsLoading(true);
+    setProductsError(null);
+
+    try {
+      const apiProducts = await productsApi.list();
+      setProducts(apiProducts);
+    } catch (error) {
+      setProducts([]);
+      setProductsError(error instanceof Error ? error.message : 'Não foi possível carregar o catálogo.');
+    } finally {
+      setIsProductsLoading(false);
+    }
+  }, []);
+
+  const refreshStudents = useCallback(async () => {
+    const apiStudents = await studentsApi.list();
+    setStudents(apiStudents);
+  }, []);
+
+  const refreshPromoCodes = useCallback(async () => {
+    const apiPromoCodes = await promoCodesApi.list();
+    setPromoCodes(apiPromoCodes);
+  }, []);
+
+  useEffect(() => {
+    refreshProducts();
+
+    const refreshProtectedAdminData = async () => {
+      if (!getAuthToken()) {
+        setStudents([]);
+        setPromoCodes([]);
+        setProtectedDataError(null);
+        setIsProtectedDataLoading(false);
+        return;
+      }
+
+      setIsProtectedDataLoading(true);
+      setProtectedDataError(null);
+
+      const results = await Promise.allSettled([
+        refreshStudents(),
+        refreshPromoCodes(),
+      ]);
+
+      const failed = results.find((result) => result.status === 'rejected');
+      if (failed) {
+        setStudents([]);
+        setPromoCodes([]);
+        setProtectedDataError('Não foi possível carregar alunos e promoções.');
+      }
+
+      setIsProtectedDataLoading(false);
     };
-    setProducts((prev) => [...prev, newProduct]);
+
+    refreshProtectedAdminData();
+    window.addEventListener(AUTH_TOKEN_CHANGED_EVENT, refreshProtectedAdminData);
+
+    return () => {
+      window.removeEventListener(AUTH_TOKEN_CHANGED_EVENT, refreshProtectedAdminData);
+    };
+  }, [refreshProducts, refreshStudents, refreshPromoCodes]);
+
+  const addProduct = async (product: Omit<Product, 'id'>) => {
+    const created = await productsApi.create(product);
+    setProducts((prev) => [...prev, created]);
   };
 
-  const updateProduct = (id: string, productUpdate: Partial<Product>) => {
+  const updateProduct = async (id: string, productUpdate: Partial<Product>) => {
+    const currentProduct = products.find((product) => product.id === id);
+    if (!currentProduct) return;
+
+    const updated = await productsApi.update(id, { ...currentProduct, ...productUpdate });
     setProducts((prev) =>
       prev.map((product) =>
-        product.id === id ? { ...product, ...productUpdate } : product
+        product.id === id ? updated : product
       )
     );
   };
 
-  const deleteProduct = (id: string) => {
+  const deleteProduct = async (id: string) => {
+    await productsApi.delete(id);
     setProducts((prev) => prev.filter((product) => product.id !== id));
   };
 
-  const addStudent = (student: Omit<Student, 'id'>) => {
-    const newStudent: Student = {
-      ...student,
-      id: Math.random().toString(36).substring(7),
-    };
-    setStudents((prev) => [...prev, newStudent]);
+  const addStudent = async (student: Omit<Student, 'id'>) => {
+    const created = await studentsApi.create(student);
+    setStudents((prev) => [...prev, created]);
   };
 
-  const updateStudent = (id: string, studentUpdate: Partial<Student>) => {
+  const updateStudent = async (id: string, studentUpdate: Partial<Student>) => {
+    const currentStudent = students.find((student) => student.id === id);
+    if (!currentStudent) return;
+
+    const updated = await studentsApi.update(id, { ...currentStudent, ...studentUpdate });
     setStudents((prev) =>
       prev.map((student) =>
-        student.id === id ? { ...student, ...studentUpdate } : student
+        student.id === id ? updated : student
       )
     );
   };
 
-  const deleteStudent = (id: string) => {
+  const deleteStudent = async (id: string) => {
+    await studentsApi.delete(id);
     setStudents((prev) => prev.filter((student) => student.id !== id));
   };
 
-  const addPromoCode = (promoCode: Omit<PromoCode, 'id' | 'usageCount'>) => {
-    const newPromoCode: PromoCode = {
-      ...promoCode,
-      id: Math.random().toString(36).substring(7),
-      usageCount: 0,
-    };
-    setPromoCodes((prev) => [...prev, newPromoCode]);
+  const addPromoCode = async (promoCode: Omit<PromoCode, 'id' | 'usageCount'>) => {
+    const created = await promoCodesApi.create(promoCode);
+    setPromoCodes((prev) => [...prev, created]);
   };
 
-  const updatePromoCode = (id: string, promoCodeUpdate: Partial<PromoCode>) => {
+  const updatePromoCode = async (id: string, promoCodeUpdate: Partial<PromoCode>) => {
+    const currentPromoCode = promoCodes.find((promoCode) => promoCode.id === id);
+    if (!currentPromoCode) return;
+
+    const updated = await promoCodesApi.update(id, { ...currentPromoCode, ...promoCodeUpdate });
     setPromoCodes((prev) =>
       prev.map((promoCode) =>
-        promoCode.id === id ? { ...promoCode, ...promoCodeUpdate } : promoCode
+        promoCode.id === id ? updated : promoCode
       )
     );
   };
 
-  const deletePromoCode = (id: string) => {
+  const deletePromoCode = async (id: string) => {
+    await promoCodesApi.delete(id);
     setPromoCodes((prev) => prev.filter((promoCode) => promoCode.id !== id));
   };
 
-  const validatePromoCode = (code: string): PromoCode | null => {
-    const promoCode = promoCodes.find(
-      (pc) => pc.code.toLowerCase() === code.toLowerCase() && pc.isActive
+  const validatePromoCode = (code: string) => {
+    return promoCodesApi.validate(code);
+  };
+
+  const usePromoCode = async (id: string) => {
+    const updated = await promoCodesApi.use(id);
+    setPromoCodes((prev) =>
+      prev.map((promoCode) =>
+        promoCode.id === id ? updated : promoCode
+      )
     );
-
-    if (!promoCode) return null;
-
-    const today = new Date();
-    const startDate = new Date(promoCode.startDate);
-    const endDate = new Date(promoCode.endDate);
-
-    if (today < startDate || today > endDate) return null;
-    if (promoCode.usageLimit && promoCode.usageCount >= promoCode.usageLimit) return null;
-
-    return promoCode;
   };
 
   return (
@@ -185,6 +205,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         products,
         students,
         promoCodes,
+        isProductsLoading,
+        isProtectedDataLoading,
+        productsError,
+        protectedDataError,
         addProduct,
         updateProduct,
         deleteProduct,
@@ -195,6 +219,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         updatePromoCode,
         deletePromoCode,
         validatePromoCode,
+        usePromoCode,
       }}
     >
       {children}

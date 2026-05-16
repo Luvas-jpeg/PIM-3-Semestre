@@ -6,10 +6,10 @@ import { useAdmin } from '../context/AdminContext';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Search } from 'lucide-react';
+import { AlertTriangle, Search } from 'lucide-react';
 
 export default function Home() {
-  const { products } = useAdmin();
+  const { products, isProductsLoading, productsError } = useAdmin();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'equipment' | 'course'>('all');
@@ -80,34 +80,51 @@ export default function Home() {
           </TabsList>
         </Tabs>
 
-        {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-gray-600">
-            {filteredProducts.length} {filteredProducts.length === 1 ? 'resultado encontrado' : 'resultados encontrados'}
-          </p>
-        </div>
-
-        {/* Products Grid */}
-        {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+        {isProductsLoading ? (
+          <div className="text-center py-16">
+            <p className="text-gray-500 text-lg">Carregando catálogo...</p>
+          </div>
+        ) : productsError ? (
+          <div className="mx-auto max-w-xl rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+            <AlertTriangle className="mx-auto mb-3 size-8 text-red-600" />
+            <h2 className="font-semibold text-red-800">Não foi possível carregar o catálogo</h2>
+            <p className="mt-2 text-sm text-red-700">{productsError}</p>
+            <p className="mt-3 text-sm text-red-700">
+              Confirme se o backend está rodando e se VITE_API_BASE_URL está correto.
+            </p>
           </div>
         ) : (
-          <div className="text-center py-16">
-            <p className="text-gray-500 text-lg">Nenhum produto encontrado</p>
-            <Button
-              variant="link"
-              onClick={() => {
-                setSearchTerm('');
-                setFilter('all');
-                setSearchParams({});
-              }}
-            >
-              Limpar filtros
-            </Button>
-          </div>
+          <>
+            {/* Results Count */}
+            <div className="mb-6">
+              <p className="text-gray-600">
+                {filteredProducts.length} {filteredProducts.length === 1 ? 'resultado encontrado' : 'resultados encontrados'}
+              </p>
+            </div>
+
+            {/* Products Grid */}
+            {filteredProducts.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <p className="text-gray-500 text-lg">Nenhum produto encontrado</p>
+                <Button
+                  variant="link"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setFilter('all');
+                    setSearchParams({});
+                  }}
+                >
+                  Limpar filtros
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </section>
 

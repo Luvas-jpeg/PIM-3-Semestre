@@ -7,8 +7,15 @@ using EquipamentosMedicosApi.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // --- Banco de Dados ---
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "ConnectionStrings:DefaultConnection não foi configurada. Configure via appsettings.Development.json, user-secrets ou variável ConnectionStrings__DefaultConnection.");
+}
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // --- CORS (permite requisições do frontend) ---
 builder.Services.AddCors(options =>
@@ -22,7 +29,13 @@ builder.Services.AddCors(options =>
 });
 
 // --- JWT Auth ---
-var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "FallbackSecretKeyWith32PlusChars!!!";
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    throw new InvalidOperationException(
+        "Jwt:Secret não foi configurado. Configure via appsettings.Development.json, user-secrets ou variável Jwt__Secret.");
+}
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

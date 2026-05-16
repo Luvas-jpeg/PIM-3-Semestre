@@ -17,34 +17,45 @@ import { toast } from 'sonner';
 export default function Checkout() {
   const navigate = useNavigate();
   const { cart, total, clearCart } = useCart();
-  const { addOrder } = useUser();
-  const { validatePromoCode, updatePromoCode } = useAdmin();
+  const { addOrder, isAuthenticated } = useUser();
+  const { validatePromoCode, usePromoCode } = useAdmin();
 
   const [paymentMethod, setPaymentMethod] = useState<'debit' | 'credit' | 'pix'>('credit');
   const [installments, setInstallments] = useState('1');
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number; type: 'percentage' | 'fixed' } | null>(null);
   const [promoError, setPromoError] = useState('');
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (cart.length === 0) {
     navigate('/');
     return null;
   }
 
-  const handleApplyPromo = () => {
+  const handleApplyPromo = async () => {
     setPromoError('');
-    const validated = validatePromoCode(promoCode);
+    setIsApplyingPromo(true);
 
-    if (validated) {
-      setAppliedPromo({
-        code: validated.code,
-        discount: validated.discount,
-        type: validated.discountType
-      });
-      toast.success('Código promocional aplicado!');
-    } else {
-      setPromoError('Código inválido, expirado ou já utilizado');
+    try {
+      const validated = await validatePromoCode(promoCode);
+
+      if (validated) {
+        setAppliedPromo({
+          code: validated.code,
+          discount: validated.discount,
+          type: validated.discountType
+        });
+        toast.success('Código promocional aplicado!');
+      } else {
+        setPromoError('Código inválido, expirado ou já utilizado');
+        setAppliedPromo(null);
+      }
+    } catch (error) {
+      setPromoError(error instanceof Error ? error.message : 'Não foi possível validar o código');
       setAppliedPromo(null);
+    } finally {
+      setIsApplyingPromo(false);
     }
   };
 
@@ -68,37 +79,48 @@ export default function Checkout() {
   const finalTotal = total - discount;
   const installmentValue = finalTotal / parseInt(installments);
 
-  const handleFinishOrder = () => {
-    // Incrementar uso do código promocional
-    if (appliedPromo) {
-      const validatedPromo = validatePromoCode(appliedPromo.code);
-      if (validatedPromo) {
-        updatePromoCode(validatedPromo.id, {
-          usageCount: validatedPromo.usageCount + 1
-        });
-      }
+  const handleFinishOrder = async () => {
+    if (!isAuthenticated) {
+      toast.error('Faça login para finalizar o pedido');
+      navigate('/login');
+      return;
     }
 
-    addOrder({
-      items: cart.map(item => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        type: item.type
-      })),
-      total,
-      discount,
-      finalTotal,
-      paymentMethod,
-      installments: paymentMethod === 'credit' ? parseInt(installments) : undefined,
-      promoCode: appliedPromo?.code,
-      status: 'pending'
-    });
+    setIsSubmitting(true);
 
-    clearCart();
-    toast.success('Pedido realizado com sucesso!');
-    navigate('/profile');
+    try {
+      if (appliedPromo) {
+        const validatedPromo = await validatePromoCode(appliedPromo.code);
+        if (validatedPromo) {
+          await usePromoCode(validatedPromo.id);
+        }
+      }
+
+      await addOrder({
+        items: cart.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          type: item.type
+        })),
+        total,
+        discount,
+        finalTotal,
+        paymentMethod,
+        installments: paymentMethod === 'credit' ? parseInt(installments) : undefined,
+        promoCode: appliedPromo?.code,
+        status: 'pending'
+      });
+
+      clearCart();
+      toast.success('Pedido realizado com sucesso!');
+      navigate('/profile');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível finalizar o pedido');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -151,8 +173,8 @@ export default function Checkout() {
                         onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                         className="flex-1"
                       />
-                      <Button onClick={handleApplyPromo} variant="outline">
-                        Aplicar
+                      <Button onClick={handleApplyPromo} variant="outline" disabled={isApplyingPromo}>
+                        {isApplyingPromo ? 'Validando...' : 'Aplicar'}
                       </Button>
                     </div>
                     {promoError && (
@@ -275,8 +297,9 @@ export default function Checkout() {
                   className="w-full bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700"
                   size="lg"
                   onClick={handleFinishOrder}
+                  disabled={isSubmitting}
                 >
-                  Finalizar Pedido
+                  {isSubmitting ? 'Finalizando...' : 'Finalizar Pedido'}
                 </Button>
 
                 <p className="text-xs text-center text-gray-500">

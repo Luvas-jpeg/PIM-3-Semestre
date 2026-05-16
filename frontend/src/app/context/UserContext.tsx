@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
+import { authApi, clearAuthToken, ordersApi, setAuthToken } from '../lib/api';
 
 export interface UserProfile {
   id: string;
@@ -43,112 +44,102 @@ interface UserContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
   orders: Order[];
-  login: (email: string, password: string) => void;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   updateProfile: (profile: Partial<UserProfile>) => void;
-  addOrder: (order: Omit<Order, 'id' | 'userId' | 'createdAt'>) => void;
+  addOrder: (order: Omit<Order, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  refreshOrders: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
+const USER_KEY = 'medishop_user';
+
+const emptyAddress: UserProfile['address'] = {
+  street: '',
+  number: '',
+  complement: '',
+  neighborhood: '',
+  city: '',
+  state: '',
+  zipCode: '',
+};
+
+function getStoredUser(): UserProfile | null {
+  const stored = localStorage.getItem(USER_KEY);
+  return stored ? JSON.parse(stored) : null;
+}
+
+function toUserProfile(user: { id: number; nome: string; email: string }): UserProfile {
+  return {
+    id: user.id.toString(),
+    name: user.nome,
+    email: user.email,
+    cpf: '',
+    phone: '',
+    address: emptyAddress,
+  };
+}
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>({
-    id: '1',
-    name: 'João Silva',
-    email: 'joao.silva@email.com',
-    cpf: '123.456.789-00',
-    phone: '(11) 98765-4321',
-    address: {
-      street: 'Rua das Flores',
-      number: '123',
-      complement: 'Apto 45',
-      neighborhood: 'Centro',
-      city: 'São Paulo',
-      state: 'SP',
-      zipCode: '01234-567'
-    }
-  });
+  const [user, setUser] = useState<UserProfile | null>(() => getStoredUser());
+  const [orders, setOrders] = useState<Order[]>([]);
 
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: '1',
-      userId: '1',
-      items: [
-        {
-          id: '5',
-          name: 'Curso de Primeiros Socorros Básico',
-          price: 450.00,
-          quantity: 1,
-          type: 'course'
-        }
-      ],
-      total: 450.00,
-      discount: 0,
-      finalTotal: 450.00,
-      paymentMethod: 'credit',
-      installments: 3,
-      status: 'completed',
-      createdAt: '2026-04-10T10:30:00'
-    },
-    {
-      id: '2',
-      userId: '1',
-      items: [
-        {
-          id: '1',
-          name: 'Estetoscópio Profissional',
-          price: 289.90,
-          quantity: 1,
-          type: 'equipment'
-        }
-      ],
-      total: 289.90,
-      discount: 28.99,
-      finalTotal: 260.91,
-      paymentMethod: 'pix',
-      promoCode: 'MEDICO10',
-      status: 'processing',
-      createdAt: '2026-04-20T14:15:00'
+  const refreshOrders = useCallback(async () => {
+    if (!user) {
+      setOrders([]);
+      return;
     }
-  ]);
 
-  const login = (email: string, password: string) => {
-    setUser({
-      id: '1',
-      name: 'João Silva',
-      email: email,
-      cpf: '123.456.789-00',
-      phone: '(11) 98765-4321',
-      address: {
-        street: 'Rua das Flores',
-        number: '123',
-        complement: 'Apto 45',
-        neighborhood: 'Centro',
-        city: 'São Paulo',
-        state: 'SP',
-        zipCode: '01234-567'
-      }
-    });
+    const apiOrders = await ordersApi.listMine();
+    setOrders(apiOrders.map((order) => ({ ...order, userId: user.id })));
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      refreshOrders().catch(() => setOrders([]));
+    }
+  }, [refreshOrders, user]);
+
+  const login = async (email: string, password: string) => {
+    const response = await authApi.login(email, password);
+    const profile = toUserProfile(response.user);
+
+    setAuthToken(response.token);
+    localStorage.setItem(USER_KEY, JSON.stringify(profile));
+    setUser(profile);
+  };
+
+  const register = async (name: string, email: string, password: string) => {
+    await authApi.register(name, email, password);
+    await login(email, password);
   };
 
   const logout = () => {
+    clearAuthToken();
+    localStorage.removeItem(USER_KEY);
     setUser(null);
+    setOrders([]);
   };
 
   const updateProfile = (profileUpdate: Partial<UserProfile>) => {
     if (user) {
-      setUser({ ...user, ...profileUpdate });
+      const updated = { ...user, ...profileUpdate };
+      setUser(updated);
+      localStorage.setItem(USER_KEY, JSON.stringify(updated));
     }
   };
 
-  const addOrder = (orderData: Omit<Order, 'id' | 'userId' | 'createdAt'>) => {
-    const newOrder: Order = {
-      ...orderData,
-      id: Math.random().toString(36).substring(7),
-      userId: user?.id || '1',
-      createdAt: new Date().toISOString()
-    };
-    setOrders((prev) => [newOrder, ...prev]);
+  const addOrder = async (orderData: Omit<Order, 'id' | 'userId' | 'createdAt'>) => {
+    await ordersApi.create(
+      orderData.items.map((item) => ({
+        productId: item.id,
+        quantity: item.quantity,
+        unitPrice: item.price,
+      }))
+    );
+
+    await refreshOrders();
   };
 
   return (
@@ -158,9 +149,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         orders,
         login,
+        register,
         logout,
         updateProfile,
         addOrder,
+        refreshOrders,
       }}
     >
       {children}

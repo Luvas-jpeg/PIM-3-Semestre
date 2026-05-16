@@ -79,7 +79,7 @@ export function StudentsManager() {
     });
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!formData.name || !formData.email || !formData.courseId) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
@@ -94,19 +94,23 @@ export function StudentsManager() {
     const today = new Date();
     const enrollmentDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
-    addStudent({
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      courseId: formData.courseId,
-      courseName: course.name,
-      enrollmentDate,
-      status: formData.status
-    });
+    try {
+      await addStudent({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        courseId: formData.courseId,
+        courseName: course.name,
+        enrollmentDate,
+        status: formData.status
+      });
 
-    toast.success('Aluno adicionado com sucesso!');
-    setIsAddDialogOpen(false);
-    resetForm();
+      toast.success('Aluno adicionado com sucesso!');
+      setIsAddDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível adicionar o aluno');
+    }
   };
 
   const handleEdit = (student: Student) => {
@@ -121,7 +125,7 @@ export function StudentsManager() {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!selectedStudent) return;
 
     if (!formData.name || !formData.email || !formData.courseId) {
@@ -135,27 +139,35 @@ export function StudentsManager() {
       return;
     }
 
-    updateStudent(selectedStudent.id, {
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      courseId: formData.courseId,
-      courseName: course.name,
-      status: formData.status
-    });
+    try {
+      await updateStudent(selectedStudent.id, {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        courseId: formData.courseId,
+        courseName: course.name,
+        status: formData.status
+      });
 
-    toast.success('Aluno atualizado com sucesso!');
-    setIsEditDialogOpen(false);
-    setSelectedStudent(null);
-    resetForm();
+      toast.success('Aluno atualizado com sucesso!');
+      setIsEditDialogOpen(false);
+      setSelectedStudent(null);
+      resetForm();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível atualizar o aluno');
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!selectedStudent) return;
-    deleteStudent(selectedStudent.id);
-    toast.success('Aluno excluído com sucesso!');
-    setIsDeleteDialogOpen(false);
-    setSelectedStudent(null);
+    try {
+      await deleteStudent(selectedStudent.id);
+      toast.success('Aluno excluído com sucesso!');
+      setIsDeleteDialogOpen(false);
+      setSelectedStudent(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível excluir o aluno');
+    }
   };
 
   const getStatusBadge = (status: string) => {

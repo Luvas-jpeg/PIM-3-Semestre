@@ -7,33 +7,57 @@ import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Heart } from 'lucide-react';
 import { toast } from 'sonner';
+import { useUser } from '../context/UserContext';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login, register } = useUser();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulação de login
-    setTimeout(() => {
+
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const email = String(formData.get('email'));
+    const password = String(formData.get('password'));
+
+    try {
+      await login(email, password);
       setIsLoading(false);
       toast.success('Login realizado com sucesso!');
       navigate('/');
-    }, 1500);
+    } catch (error) {
+      setIsLoading(false);
+      toast.error(error instanceof Error ? error.message : 'Não foi possível entrar');
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulação de cadastro
-    setTimeout(() => {
+
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const name = String(formData.get('name'));
+    const email = String(formData.get('email'));
+    const password = String(formData.get('password'));
+    const confirmPassword = String(formData.get('confirm-password'));
+
+    if (password !== confirmPassword) {
       setIsLoading(false);
+      toast.error('As senhas não conferem');
+      return;
+    }
+
+    try {
+      await register(name, email, password);
       toast.success('Cadastro realizado com sucesso!');
       navigate('/');
-    }, 1500);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível criar a conta');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -67,6 +91,7 @@ export default function Login() {
                     <Label htmlFor="email">E-mail</Label>
                     <Input
                       id="email"
+                      name="email"
                       type="email"
                       placeholder="seu@email.com"
                       required
@@ -76,6 +101,7 @@ export default function Login() {
                     <Label htmlFor="password">Senha</Label>
                     <Input
                       id="password"
+                      name="password"
                       type="password"
                       placeholder="••••••••"
                       required
@@ -108,6 +134,7 @@ export default function Login() {
                     <Label htmlFor="name">Nome completo</Label>
                     <Input
                       id="name"
+                      name="name"
                       type="text"
                       placeholder="João Silva"
                       required
@@ -117,6 +144,7 @@ export default function Login() {
                     <Label htmlFor="register-email">E-mail</Label>
                     <Input
                       id="register-email"
+                      name="email"
                       type="email"
                       placeholder="seu@email.com"
                       required
@@ -126,6 +154,7 @@ export default function Login() {
                     <Label htmlFor="cpf">CPF</Label>
                     <Input
                       id="cpf"
+                      name="cpf"
                       type="text"
                       placeholder="000.000.000-00"
                       required
@@ -135,6 +164,7 @@ export default function Login() {
                     <Label htmlFor="phone">Telefone</Label>
                     <Input
                       id="phone"
+                      name="phone"
                       type="tel"
                       placeholder="(11) 99999-9999"
                       required
@@ -144,6 +174,7 @@ export default function Login() {
                     <Label htmlFor="register-password">Senha</Label>
                     <Input
                       id="register-password"
+                      name="password"
                       type="password"
                       placeholder="••••••••"
                       required
@@ -153,6 +184,7 @@ export default function Login() {
                     <Label htmlFor="confirm-password">Confirmar senha</Label>
                     <Input
                       id="confirm-password"
+                      name="confirm-password"
                       type="password"
                       placeholder="••••••••"
                       required

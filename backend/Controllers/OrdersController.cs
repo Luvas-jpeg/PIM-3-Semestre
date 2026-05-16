@@ -66,6 +66,7 @@ namespace EquipamentosMedicosApi.Controllers
             var orders = await _context.Orders
                 .Where(o => o.UsuarioId == userId)
                 .Include(o => o.Itens)
+                    .ThenInclude(i => i.Produto)
                 .OrderByDescending(o => o.DataPedido)
                 .Select(o => new
                 {
@@ -77,6 +78,8 @@ namespace EquipamentosMedicosApi.Controllers
                     Itens = o.Itens.Select(i => new
                     {
                         i.ProdutoId,
+                        Nome = i.Produto != null ? i.Produto.Nome : string.Empty,
+                        TipoProduto = i.Produto != null ? i.Produto.TipoProduto : "equipment",
                         i.Quantidade,
                         i.PrecoUnitario
                     })

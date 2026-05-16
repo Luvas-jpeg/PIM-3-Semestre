@@ -13,6 +13,8 @@ namespace EquipamentosMedicosApi.Data
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<CourseClass> CourseClasses { get; set; }
         public DbSet<Inscricao> Inscricoes { get; set; }
+        public DbSet<Student> Students { get; set; }
+        public DbSet<PromoCode> PromoCodes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -28,6 +30,17 @@ namespace EquipamentosMedicosApi.Data
                 new Product { Id = 6, Nome = "Curso de Suporte Avançado de Vida (ACLS)", Preco = 1200.00m, TipoProduto = "course", Estoque = 15, Description = "Treinamento avançado para profissionais de saúde em emergências cardiovasculares. Carga horária de 16h.", Image = "https://images.unsplash.com/photo-1659353887019-b142198f2668?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZWRpY2FsJTIwdHJhaW5pbmclMjBjb3Vyc2V8ZW58MXx8fHwxNzczNTE3MTEyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral", Category = "Treinamento Avançado", Date = "22/04/2026 - 23/04/2026", Location = "Rio de Janeiro - RJ", Instructor = "Dra. Ana Paula Costa" },
                 new Product { Id = 7, Nome = "Workshop de Técnicas de Sutura", Preco = 890.00m, TipoProduto = "course", Estoque = 12, Description = "Práticas intensivas de diferentes técnicas de sutura em modelos sintéticos. Aula prática com supervisão.", Image = "https://images.unsplash.com/photo-1659353887019-b142198f2668?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZWRpY2FsJTIwdHJhaW5pbmclMjBjb3Vyc2V8ZW58MXx8fHwxNzczNTE3MTEyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral", Category = "Workshop", Date = "10/05/2026", Location = "Belo Horizonte - MG", Instructor = "Dr. Roberto Mendes" },
                 new Product { Id = 8, Nome = "Curso de Biossegurança Hospitalar", Preco = 350.00m, TipoProduto = "course", Estoque = 25, Description = "Normas e práticas de biossegurança em ambientes hospitalares. Essencial para toda equipe de saúde.", Image = "https://images.unsplash.com/photo-1622115585848-1d5b6e8af4e4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaXJzdCUyMGFpZCUyMHRyYWluaW5nfGVufDF8fHx8MTc3MzUxNzExM3ww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral", Category = "Biossegurança", Date = "18/04/2026", Location = "Curitiba - PR", Instructor = "Enf. Marina Oliveira" }
+            );
+
+            modelBuilder.Entity<Student>().HasData(
+                new Student { Id = 1, Name = "João Silva", Email = "joao.silva@email.com", Phone = "(11) 98765-4321", CourseId = "5", CourseName = "Curso de Primeiros Socorros Básico", EnrollmentDate = "10/04/2026", Status = "active" },
+                new Student { Id = 2, Name = "Maria Santos", Email = "maria.santos@email.com", Phone = "(21) 99876-5432", CourseId = "6", CourseName = "Curso de Suporte Avançado de Vida (ACLS)", EnrollmentDate = "05/04/2026", Status = "active" },
+                new Student { Id = 3, Name = "Pedro Oliveira", Email = "pedro.oliveira@email.com", Phone = "(31) 97654-3210", CourseId = "7", CourseName = "Workshop de Técnicas de Sutura", EnrollmentDate = "28/03/2026", Status = "completed" }
+            );
+
+            modelBuilder.Entity<PromoCode>().HasData(
+                new PromoCode { Id = 1, Code = "MEDICO10", Discount = 10m, DiscountType = "percentage", StartDate = "2026-04-01", EndDate = "2026-12-31", IsActive = true, UsageLimit = 100, UsageCount = 5 },
+                new PromoCode { Id = 2, Code = "PRIMEIRACOMPRA", Discount = 50m, DiscountType = "fixed", StartDate = "2026-01-01", EndDate = "2026-12-31", IsActive = true, UsageCount = 12 }
             );
         }
     }

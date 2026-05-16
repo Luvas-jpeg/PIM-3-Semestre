@@ -43,12 +43,22 @@ MediShop é uma aplicação web para venda de equipamentos médicos e cursos pre
 ## Pré-requisitos
 
 - .NET SDK 10.
-- Node.js 20 ou superior. O projeto usa Vite 6 e React Router 7, que não funcionam corretamente em Node 16.
+- Node.js 20 ou superior. Use `nvm use` na raiz do projeto para carregar a versão do `.nvmrc`.
 - PostgreSQL acessível pela connection string do backend.
 
 ## Configuração do Backend
 
-O backend lê a connection string em `backend/appsettings.json`:
+O backend não deve versionar credenciais reais. Configure a connection string e o segredo JWT por variável de ambiente, user-secrets ou `backend/appsettings.Development.json`.
+
+Exemplo com variáveis de ambiente:
+
+```bash
+ConnectionStrings__DefaultConnection="Server=localhost;Port=5432;Database=medishop;User Id=postgres;Password=postgres;Include Error Detail=true;" \
+Jwt__Secret="TroquePorUmaChaveLocalComMaisDe32Caracteres" \
+dotnet run --project backend/backend.csproj
+```
+
+Também existe um modelo em `backend/appsettings.Example.json`:
 
 ```json
 {
@@ -58,7 +68,7 @@ O backend lê a connection string em `backend/appsettings.json`:
 }
 ```
 
-Para ambiente local, o ideal é mover credenciais sensíveis para `appsettings.Development.json`, variáveis de ambiente ou user-secrets do .NET.
+Se credenciais reais já tiverem sido compartilhadas ou commitadas, gere uma nova senha no provedor do banco antes de usar o projeto novamente.
 
 Ao iniciar, a API executa automaticamente as migrations:
 
@@ -77,6 +87,7 @@ http://localhost:5278
 Instale as dependências:
 
 ```bash
+nvm use
 cd frontend
 npm install
 ```
@@ -99,17 +110,22 @@ O frontend usa `http://localhost:5278/api` como URL padrão da API. Para alterar
 VITE_API_BASE_URL=http://localhost:5278/api npm run dev
 ```
 
+Você também pode copiar `frontend/.env.example` para `.env.local` e ajustar `VITE_API_BASE_URL`.
+
 ## Como Rodar o Projeto
 
 Em um terminal, inicie o backend:
 
 ```bash
+ConnectionStrings__DefaultConnection="Server=localhost;Port=5432;Database=medishop;User Id=postgres;Password=postgres;Include Error Detail=true;" \
+Jwt__Secret="TroquePorUmaChaveLocalComMaisDe32Caracteres" \
 dotnet run --project backend/backend.csproj
 ```
 
 Em outro terminal, inicie o frontend:
 
 ```bash
+nvm use
 cd frontend
 npm run dev
 ```
@@ -148,6 +164,26 @@ http://localhost:5173
 | POST | `/api/Orders` | Cria pedido autenticado |
 | GET | `/api/Orders/my` | Lista pedidos do usuário autenticado |
 
+### Alunos
+
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| GET | `/api/Students` | Lista alunos, requer autenticação |
+| POST | `/api/Students` | Cria aluno, requer autenticação |
+| PUT | `/api/Students/{id}` | Atualiza aluno, requer autenticação |
+| DELETE | `/api/Students/{id}` | Remove aluno, requer autenticação |
+
+### Cupons Promocionais
+
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| GET | `/api/PromoCodes` | Lista cupons, requer autenticação |
+| GET | `/api/PromoCodes/validate?code=CODIGO` | Valida cupom no checkout |
+| POST | `/api/PromoCodes` | Cria cupom, requer autenticação |
+| PUT | `/api/PromoCodes/{id}` | Atualiza cupom, requer autenticação |
+| POST | `/api/PromoCodes/{id}/use` | Incrementa uso do cupom, requer autenticação |
+| DELETE | `/api/PromoCodes/{id}` | Remove cupom, requer autenticação |
+
 ## Fluxo da Aplicação
 
 1. O usuário navega pelo catálogo sem login.
@@ -161,7 +197,7 @@ http://localhost:5173
 ## Observações
 
 - O painel administrativo ainda não possui controle de perfil. Qualquer usuário autenticado consegue usar as rotas protegidas de produtos.
-- A gestão de alunos/inscrições foi removida da interface administrativa até existirem endpoints completos no backend.
+- O painel administrativo agora depende da API para produtos, alunos e cupons; se o backend estiver fora do ar, a interface exibe erro em vez de usar dados mockados.
 - O arquivo `backend/medishop.db` existe no repositório, mas a aplicação atual usa PostgreSQL via Npgsql.
 - As imagens iniciais dos produtos usam URLs externas.
 

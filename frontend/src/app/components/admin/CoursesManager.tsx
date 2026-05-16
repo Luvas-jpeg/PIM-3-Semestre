@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog';
 import { Plus, Edit, Trash2, Calendar, MapPin, User } from 'lucide-react';
-import { Product } from '../../context/CartContext';
+import type { Product } from '../../context/CartContext';
 import { toast } from 'sonner';
 
 export function CoursesManager() {
@@ -67,27 +67,31 @@ export function CoursesManager() {
     });
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!formData.name || !formData.price || !formData.description || !formData.date) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
-    addProduct({
-      name: formData.name,
-      price: parseFloat(formData.price),
-      description: formData.description,
-      date: formData.date,
-      location: formData.location,
-      instructor: formData.instructor,
-      stock: parseInt(formData.stock) || 0,
-      image: formData.image || 'https://images.unsplash.com/photo-1622115585848-1d5b6e8af4e4',
-      type: 'course'
-    });
+    try {
+      await addProduct({
+        name: formData.name,
+        price: parseFloat(formData.price),
+        description: formData.description,
+        date: formData.date,
+        location: formData.location,
+        instructor: formData.instructor,
+        stock: parseInt(formData.stock) || 0,
+        image: formData.image || 'https://images.unsplash.com/photo-1622115585848-1d5b6e8af4e4',
+        type: 'course'
+      });
 
-    toast.success('Curso adicionado com sucesso!');
-    setIsAddDialogOpen(false);
-    resetForm();
+      toast.success('Curso adicionado com sucesso!');
+      setIsAddDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível adicionar o curso');
+    }
   };
 
   const handleEdit = (course: Product) => {
@@ -105,7 +109,7 @@ export function CoursesManager() {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!selectedCourse) return;
 
     if (!formData.name || !formData.price || !formData.description || !formData.date) {
@@ -113,29 +117,37 @@ export function CoursesManager() {
       return;
     }
 
-    updateProduct(selectedCourse.id, {
-      name: formData.name,
-      price: parseFloat(formData.price),
-      description: formData.description,
-      date: formData.date,
-      location: formData.location,
-      instructor: formData.instructor,
-      stock: parseInt(formData.stock) || 0,
-      image: formData.image
-    });
+    try {
+      await updateProduct(selectedCourse.id, {
+        name: formData.name,
+        price: parseFloat(formData.price),
+        description: formData.description,
+        date: formData.date,
+        location: formData.location,
+        instructor: formData.instructor,
+        stock: parseInt(formData.stock) || 0,
+        image: formData.image
+      });
 
-    toast.success('Curso atualizado com sucesso!');
-    setIsEditDialogOpen(false);
-    setSelectedCourse(null);
-    resetForm();
+      toast.success('Curso atualizado com sucesso!');
+      setIsEditDialogOpen(false);
+      setSelectedCourse(null);
+      resetForm();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível atualizar o curso');
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!selectedCourse) return;
-    deleteProduct(selectedCourse.id);
-    toast.success('Curso excluído com sucesso!');
-    setIsDeleteDialogOpen(false);
-    setSelectedCourse(null);
+    try {
+      await deleteProduct(selectedCourse.id);
+      toast.success('Curso excluído com sucesso!');
+      setIsDeleteDialogOpen(false);
+      setSelectedCourse(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível excluir o curso');
+    }
   };
 
   return (

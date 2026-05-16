@@ -315,6 +315,148 @@ namespace backend.Migrations
                         });
                 });
 
+            modelBuilder.Entity("EquipamentosMedicosApi.Models.PromoCode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Discount")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("DiscountType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EndDate")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("StartDate")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("UsageCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("UsageLimit")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PromoCodes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Code = "MEDICO10",
+                            Discount = 10m,
+                            DiscountType = "percentage",
+                            EndDate = "2026-12-31",
+                            IsActive = true,
+                            StartDate = "2026-04-01",
+                            UsageCount = 5,
+                            UsageLimit = 100
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Code = "PRIMEIRACOMPRA",
+                            Discount = 50m,
+                            DiscountType = "fixed",
+                            EndDate = "2026-12-31",
+                            IsActive = true,
+                            StartDate = "2026-01-01",
+                            UsageCount = 12
+                        });
+                });
+
+            modelBuilder.Entity("EquipamentosMedicosApi.Models.Student", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CourseId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CourseName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EnrollmentDate")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Students");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CourseId = "5",
+                            CourseName = "Curso de Primeiros Socorros Básico",
+                            Email = "joao.silva@email.com",
+                            EnrollmentDate = "10/04/2026",
+                            Name = "João Silva",
+                            Phone = "(11) 98765-4321",
+                            Status = "active"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CourseId = "6",
+                            CourseName = "Curso de Suporte Avançado de Vida (ACLS)",
+                            Email = "maria.santos@email.com",
+                            EnrollmentDate = "05/04/2026",
+                            Name = "Maria Santos",
+                            Phone = "(21) 99876-5432",
+                            Status = "active"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CourseId = "7",
+                            CourseName = "Workshop de Técnicas de Sutura",
+                            Email = "pedro.oliveira@email.com",
+                            EnrollmentDate = "28/03/2026",
+                            Name = "Pedro Oliveira",
+                            Phone = "(31) 97654-3210",
+                            Status = "completed"
+                        });
+                });
+
             modelBuilder.Entity("EquipamentosMedicosApi.Models.User", b =>
                 {
                     b.Property<int>("ID")
