@@ -1,6 +1,6 @@
 import type { Product } from '../context/CartContext';
 import type { Order } from '../context/UserContext';
-import type { PromoCode, Student } from '../context/AdminContext';
+import type { AdminOrder, PromoCode, Student } from '../context/AdminContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5278/api';
 const TOKEN_KEY = 'medishop_token';
@@ -10,6 +10,16 @@ export interface ApiUser {
   id: number;
   nome: string;
   email: string;
+  cpf: string;
+  phone: string;
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  role: 'Cliente' | 'Admin';
 }
 
 export interface ApiProduct {
@@ -41,6 +51,14 @@ export interface ApiOrder {
   total: number;
   valorFrete: number;
   itens: ApiOrderItem[];
+}
+
+export interface ApiAdminOrder extends ApiOrder {
+  usuario?: {
+    id: number;
+    nome: string;
+    email: string;
+  } | null;
 }
 
 interface LoginResponse {
@@ -166,6 +184,17 @@ function normalizeStatus(status: string): Order['status'] {
   return 'pending';
 }
 
+function toApiStatus(status: AdminOrder['status']) {
+  const map: Record<AdminOrder['status'], string> = {
+    pending: 'Pendente',
+    processing: 'Processando',
+    completed: 'Concluído',
+    cancelled: 'Cancelado',
+  };
+
+  return map[status];
+}
+
 export function toOrder(order: ApiOrder): Order {
   return {
     id: order.id.toString(),
@@ -183,6 +212,25 @@ export function toOrder(order: ApiOrder): Order {
     paymentMethod: 'credit',
     status: normalizeStatus(order.status),
     createdAt: order.dataPedido,
+  };
+}
+
+function toAdminOrder(order: ApiAdminOrder): AdminOrder {
+  return {
+    id: order.id.toString(),
+    customerName: order.usuario?.nome ?? 'Cliente não identificado',
+    customerEmail: order.usuario?.email ?? '',
+    createdAt: order.dataPedido,
+    status: normalizeStatus(order.status),
+    total: Number(order.total),
+    shipping: Number(order.valorFrete),
+    items: order.itens.map((item) => ({
+      productId: item.produtoId.toString(),
+      name: item.nome ?? `Produto #${item.produtoId}`,
+      type: item.tipoProduto ?? 'equipment',
+      quantity: item.quantidade,
+      unitPrice: Number(item.precoUnitario),
+    })),
   };
 }
 
@@ -246,11 +294,29 @@ export const authApi = {
       body: JSON.stringify({ email, senha }),
     });
   },
-  register(nome: string, email: string, senha: string) {
+  register(nome: string, email: string, senha: string, cpf: string, phone: string) {
     return apiRequest<{ message: string; userId: number }>('/Auth/cadastrar', {
       method: 'POST',
       auth: false,
-      body: JSON.stringify({ nome, email, senha }),
+      body: JSON.stringify({ nome, email, senha, cpf, phone }),
+    });
+  },
+  updateProfile(profile: {
+    nome: string;
+    email: string;
+    cpf: string;
+    phone: string;
+    street: string;
+    number: string;
+    complement: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  }) {
+    return apiRequest<ApiUser>('/Auth/perfil', {
+      method: 'PUT',
+      body: JSON.stringify(profile),
     });
   },
 };
@@ -297,6 +363,24 @@ export const ordersApi = {
         })),
       }),
     });
+  },
+};
+
+export const ordersAdminApi = {
+  async list() {
+    const orders = await apiRequest<ApiAdminOrder[]>('/Orders');
+    return orders.map(toAdminOrder);
+  },
+  async updateStatus(id: string, status: AdminOrder['status']) {
+    const updated = await apiRequest<{ id: number; status: string }>(`/Orders/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: toApiStatus(status) }),
+    });
+
+    return {
+      id: updated.id.toString(),
+      status: normalizeStatus(updated.status),
+    };
   },
 };
 

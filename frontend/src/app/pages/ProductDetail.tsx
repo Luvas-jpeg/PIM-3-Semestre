@@ -16,6 +16,14 @@ export default function ProductDetail() {
   const { products } = useAdmin();
 
   const product = products.find((p) => p.id === id);
+  const stockLabel = product
+    ? (() => {
+        if (product.stock === undefined) return null;
+        if (product.stock <= 0) return product.type === 'course' ? 'Turma esgotada' : 'Esgotado';
+        if (product.stock <= 5) return product.type === 'course' ? `Últimas ${product.stock} vagas` : `Últimas ${product.stock} unidades`;
+        return product.type === 'course' ? `${product.stock} vagas disponíveis` : `${product.stock} disponíveis`;
+      })()
+    : null;
 
   if (!product) {
     return (
@@ -30,7 +38,13 @@ export default function ProductDetail() {
   }
 
   const handleAddToCart = () => {
-    addToCart(product);
+    const wasAdded = addToCart(product);
+
+    if (!wasAdded) {
+      toast.error(product.type === 'course' ? 'Não há vagas disponíveis' : 'Produto sem estoque disponível');
+      return;
+    }
+
     toast.success(
       product.type === 'course' 
         ? 'Curso adicionado ao carrinho!' 
@@ -82,7 +96,7 @@ export default function ProductDetail() {
               </span>
               {product.stock !== undefined && (
                 <span className="text-gray-500">
-                  {product.stock > 0 ? `${product.stock} disponíveis` : 'Esgotado'}
+                  {stockLabel}
                 </span>
               )}
             </div>
@@ -181,7 +195,11 @@ export default function ProductDetail() {
                 className="w-full"
                 size="lg"
                 onClick={() => {
-                  addToCart(product);
+                  const wasAdded = addToCart(product);
+                  if (!wasAdded) {
+                    toast.error(product.type === 'course' ? 'Não há vagas disponíveis' : 'Produto sem estoque disponível');
+                    return;
+                  }
                   navigate('/cart');
                 }}
                 disabled={product.stock === 0}

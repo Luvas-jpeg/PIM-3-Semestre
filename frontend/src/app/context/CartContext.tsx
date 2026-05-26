@@ -20,7 +20,7 @@ export interface CartItem extends Product {
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product) => boolean;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -33,9 +33,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
 
   const addToCart = (product: Product) => {
+    if (product.stock !== undefined && product.stock <= 0) {
+      return false;
+    }
+
+    let wasAdded = true;
+
     setCart((prevCart) => {
       const existingItem = prevCart.find((item) => item.id === product.id);
       if (existingItem) {
+        if (product.stock !== undefined && existingItem.quantity >= product.stock) {
+          wasAdded = false;
+          return prevCart;
+        }
+
         return prevCart.map((item) =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
@@ -44,6 +55,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       return [...prevCart, { ...product, quantity: 1 }];
     });
+
+    return wasAdded;
   };
 
   const removeFromCart = (productId: string) => {
@@ -57,7 +70,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
     setCart((prevCart) =>
       prevCart.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
+        item.id === productId
+          ? { ...item, quantity: item.stock !== undefined ? Math.min(quantity, item.stock) : quantity }
+          : item
       )
     );
   };

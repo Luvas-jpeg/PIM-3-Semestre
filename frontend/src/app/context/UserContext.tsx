@@ -5,6 +5,7 @@ export interface UserProfile {
   id: string;
   name: string;
   email: string;
+  role: 'Cliente' | 'Admin';
   cpf: string;
   phone: string;
   address: {
@@ -43,11 +44,12 @@ export interface Order {
 interface UserContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   orders: Order[];
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, cpf: string, phone: string) => Promise<void>;
   logout: () => void;
-  updateProfile: (profile: Partial<UserProfile>) => void;
+  updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
   addOrder: (order: Omit<Order, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
   refreshOrders: () => Promise<void>;
 }
@@ -67,17 +69,49 @@ const emptyAddress: UserProfile['address'] = {
 
 function getStoredUser(): UserProfile | null {
   const stored = localStorage.getItem(USER_KEY);
-  return stored ? JSON.parse(stored) : null;
+  if (!stored) return null;
+
+  const parsed = JSON.parse(stored) as Partial<UserProfile>;
+  return {
+    ...parsed,
+    role: parsed.role === 'Admin' ? 'Admin' : 'Cliente',
+    cpf: parsed.cpf ?? '',
+    phone: parsed.phone ?? '',
+    address: { ...emptyAddress, ...parsed.address },
+  } as UserProfile;
 }
 
-function toUserProfile(user: { id: number; nome: string; email: string }): UserProfile {
+function toUserProfile(user: {
+  id: number;
+  nome: string;
+  email: string;
+  cpf?: string;
+  phone?: string;
+  street?: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  role?: string;
+}): UserProfile {
   return {
     id: user.id.toString(),
     name: user.nome,
     email: user.email,
-    cpf: '',
-    phone: '',
-    address: emptyAddress,
+    role: user.role === 'Admin' ? 'Admin' : 'Cliente',
+    cpf: user.cpf ?? '',
+    phone: user.phone ?? '',
+    address: {
+      street: user.street ?? '',
+      number: user.number ?? '',
+      complement: user.complement ?? '',
+      neighborhood: user.neighborhood ?? '',
+      city: user.city ?? '',
+      state: user.state ?? '',
+      zipCode: user.zipCode ?? '',
+    },
   };
 }
 
@@ -110,8 +144,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUser(profile);
   };
 
-  const register = async (name: string, email: string, password: string) => {
-    await authApi.register(name, email, password);
+  const register = async (name: string, email: string, password: string, cpf: string, phone: string) => {
+    await authApi.register(name, email, password, cpf, phone);
     await login(email, password);
   };
 
@@ -122,9 +156,26 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setOrders([]);
   };
 
-  const updateProfile = (profileUpdate: Partial<UserProfile>) => {
+  const updateProfile = async (profileUpdate: Partial<UserProfile>) => {
     if (user) {
-      const updated = { ...user, ...profileUpdate };
+      const merged = { ...user, ...profileUpdate };
+      const apiUser = await authApi.updateProfile({
+        nome: merged.name,
+        email: merged.email,
+        cpf: merged.cpf,
+        phone: merged.phone,
+        street: merged.address.street,
+        number: merged.address.number,
+        complement: merged.address.complement ?? '',
+        neighborhood: merged.address.neighborhood,
+        city: merged.address.city,
+        state: merged.address.state,
+        zipCode: merged.address.zipCode,
+      });
+      const updated = {
+        ...merged,
+        ...toUserProfile(apiUser),
+      };
       setUser(updated);
       localStorage.setItem(USER_KEY, JSON.stringify(updated));
     }
@@ -147,6 +198,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isAuthenticated: !!user,
+        isAdmin: user?.role === 'Admin',
         orders,
         login,
         register,

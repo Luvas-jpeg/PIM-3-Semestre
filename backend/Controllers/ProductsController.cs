@@ -61,7 +61,7 @@ namespace EquipamentosMedicosApi.Controllers
 
         /// <summary>Cria um produto ou curso</summary>
         [HttpPost]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromBody] ProductRequestDTO request)
         {
             var validation = ValidateRequest(request);
@@ -79,7 +79,7 @@ namespace EquipamentosMedicosApi.Controllers
 
         /// <summary>Atualiza um produto ou curso</summary>
         [HttpPut("{id}")]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, [FromBody] ProductRequestDTO request)
         {
             var validation = ValidateRequest(request);
@@ -98,7 +98,7 @@ namespace EquipamentosMedicosApi.Controllers
 
         /// <summary>Remove um produto ou curso</summary>
         [HttpDelete("{id}")]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);

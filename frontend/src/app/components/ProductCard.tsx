@@ -14,10 +14,22 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const stockLabel = (() => {
+    if (product.stock === undefined) return null;
+    if (product.stock <= 0) return product.type === 'course' ? 'Turma esgotada' : 'Esgotado';
+    if (product.stock <= 5) return product.type === 'course' ? `Últimas ${product.stock} vagas` : `Últimas ${product.stock} unidades`;
+    return product.type === 'course' ? `${product.stock} vagas disponíveis` : `${product.stock} disponíveis`;
+  })();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    addToCart(product);
+    const wasAdded = addToCart(product);
+
+    if (!wasAdded) {
+      toast.error(product.type === 'course' ? 'Não há vagas disponíveis' : 'Produto sem estoque disponível');
+      return;
+    }
+
     toast.success(
       product.type === 'course' 
         ? 'Curso adicionado ao carrinho!' 
@@ -78,7 +90,7 @@ export function ProductCard({ product }: ProductCardProps) {
             </p>
             {product.stock !== undefined && (
               <p className="text-xs text-gray-500">
-                {product.stock > 0 ? `${product.stock} disponíveis` : 'Esgotado'}
+                {stockLabel}
               </p>
             )}
           </div>

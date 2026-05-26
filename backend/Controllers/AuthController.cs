@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -35,7 +36,10 @@ namespace EquipamentosMedicosApi.Controllers
             {
                 Nome = request.Nome,
                 Email = request.Email,
-                SenhaHash = BCrypt.Net.BCrypt.HashPassword(request.Senha)
+                Cpf = request.Cpf,
+                Phone = request.Phone,
+                SenhaHash = BCrypt.Net.BCrypt.HashPassword(request.Senha),
+                Role = "Cliente"
             };
 
             _context.Users.Add(user);
@@ -58,8 +62,49 @@ namespace EquipamentosMedicosApi.Controllers
             return Ok(new
             {
                 token,
-                user = new { id = user.ID, nome = user.Nome, email = user.Email }
+                user = ToResponse(user)
             });
+        }
+
+        [HttpPut("perfil")]
+        [Authorize]
+        public async Task<IActionResult> AtualizarPerfil([FromBody] UpdateProfileDTO request)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
+                           ?? User.FindFirst(JwtRegisteredClaimNames.Sub)
+                           ?? User.FindFirst("sub");
+
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.ID == userId);
+            if (user == null)
+                return NotFound(new { message = "Usuário não encontrado." });
+
+            var email = request.Email.Trim();
+            if (string.IsNullOrWhiteSpace(request.Nome) || string.IsNullOrWhiteSpace(email))
+                return BadRequest(new { message = "Nome e e-mail são obrigatórios." });
+
+            var duplicatedEmail = await _context.Users
+                .AnyAsync(u => u.ID != userId && u.Email == email);
+            if (duplicatedEmail)
+                return Conflict(new { message = "E-mail já cadastrado." });
+
+            user.Nome = request.Nome.Trim();
+            user.Email = email;
+            user.Cpf = request.Cpf.Trim();
+            user.Phone = request.Phone.Trim();
+            user.Street = request.Street.Trim();
+            user.Number = request.Number.Trim();
+            user.Complement = request.Complement.Trim();
+            user.Neighborhood = request.Neighborhood.Trim();
+            user.City = request.City.Trim();
+            user.State = request.State.Trim();
+            user.ZipCode = request.ZipCode.Trim();
+
+            await _context.SaveChangesAsync();
+
+            return Ok(ToResponse(user));
         }
 
         private string GerarToken(User user)
@@ -73,9 +118,11 @@ namespace EquipamentosMedicosApi.Controllers
 
             var claims = new[]
             {
+                new Claim(ClaimTypes.NameIdentifier, user.ID.ToString()),
                 new Claim(JwtRegisteredClaimNames.Sub, user.ID.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim("name", user.Nome),
+                new Claim(ClaimTypes.Role, user.Role),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
@@ -90,6 +137,26 @@ namespace EquipamentosMedicosApi.Controllers
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private static UserResponseDTO ToResponse(User user)
+        {
+            return new UserResponseDTO
+            {
+                Id = user.ID,
+                Nome = user.Nome,
+                Email = user.Email,
+                Cpf = user.Cpf,
+                Phone = user.Phone,
+                Street = user.Street,
+                Number = user.Number,
+                Complement = user.Complement,
+                Neighborhood = user.Neighborhood,
+                City = user.City,
+                State = user.State,
+                ZipCode = user.ZipCode,
+                Role = user.Role
+            };
         }
     }
 }

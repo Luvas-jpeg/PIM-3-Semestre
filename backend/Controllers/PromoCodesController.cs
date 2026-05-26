@@ -25,7 +25,7 @@ namespace EquipamentosMedicosApi.Controllers
         }
 
         [HttpGet]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll()
         {
             var promoCodes = await _context.PromoCodes
@@ -37,7 +37,7 @@ namespace EquipamentosMedicosApi.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetById(int id)
         {
             var promoCode = await _context.PromoCodes.FirstOrDefaultAsync(p => p.Id == id);
@@ -63,7 +63,7 @@ namespace EquipamentosMedicosApi.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromBody] PromoCodeRequestDTO request)
         {
             var validation = ValidateRequest(request);
@@ -84,7 +84,7 @@ namespace EquipamentosMedicosApi.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, [FromBody] PromoCodeRequestDTO request)
         {
             var validation = ValidateRequest(request);
@@ -125,7 +125,7 @@ namespace EquipamentosMedicosApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var promoCode = await _context.PromoCodes.FirstOrDefaultAsync(p => p.Id == id);

@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
 import type { Product } from './CartContext';
-import { AUTH_TOKEN_CHANGED_EVENT, getAuthToken, productsApi, promoCodesApi, studentsApi } from '../lib/api';
+import { ordersAdminApi, productsApi, promoCodesApi, studentsApi } from '../lib/api';
+import { useUser } from './UserContext';
 
 export interface Student {
   id: string;
@@ -25,10 +26,30 @@ export interface PromoCode {
   usageCount: number;
 }
 
+export interface AdminOrderItem {
+  productId: string;
+  name: string;
+  type: 'equipment' | 'course';
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface AdminOrder {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  createdAt: string;
+  status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  total: number;
+  shipping: number;
+  items: AdminOrderItem[];
+}
+
 interface AdminContextType {
   products: Product[];
   students: Student[];
   promoCodes: PromoCode[];
+  orders: AdminOrder[];
   isProductsLoading: boolean;
   isProtectedDataLoading: boolean;
   productsError: string | null;
@@ -42,6 +63,7 @@ interface AdminContextType {
   addPromoCode: (promoCode: Omit<PromoCode, 'id' | 'usageCount'>) => Promise<void>;
   updatePromoCode: (id: string, promoCode: Partial<PromoCode>) => Promise<void>;
   deletePromoCode: (id: string) => Promise<void>;
+  updateOrderStatus: (id: string, status: AdminOrder['status']) => Promise<void>;
   validatePromoCode: (code: string) => Promise<PromoCode | null>;
   usePromoCode: (id: string) => Promise<void>;
 }
@@ -49,9 +71,11 @@ interface AdminContextType {
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export function AdminProvider({ children }: { children: ReactNode }) {
+  const { isAdmin } = useUser();
   const [products, setProducts] = useState<Product[]>([]);
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   const [isProtectedDataLoading, setIsProtectedDataLoading] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
@@ -82,13 +106,19 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     setPromoCodes(apiPromoCodes);
   }, []);
 
+  const refreshOrders = useCallback(async () => {
+    const apiOrders = await ordersAdminApi.list();
+    setOrders(apiOrders);
+  }, []);
+
   useEffect(() => {
     refreshProducts();
 
     const refreshProtectedAdminData = async () => {
-      if (!getAuthToken()) {
+      if (!isAdmin) {
         setStudents([]);
         setPromoCodes([]);
+        setOrders([]);
         setProtectedDataError(null);
         setIsProtectedDataLoading(false);
         return;
@@ -100,12 +130,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const results = await Promise.allSettled([
         refreshStudents(),
         refreshPromoCodes(),
+        refreshOrders(),
       ]);
 
       const failed = results.find((result) => result.status === 'rejected');
       if (failed) {
         setStudents([]);
         setPromoCodes([]);
+        setOrders([]);
         setProtectedDataError('Não foi possível carregar alunos e promoções.');
       }
 
@@ -113,12 +145,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     };
 
     refreshProtectedAdminData();
-    window.addEventListener(AUTH_TOKEN_CHANGED_EVENT, refreshProtectedAdminData);
-
-    return () => {
-      window.removeEventListener(AUTH_TOKEN_CHANGED_EVENT, refreshProtectedAdminData);
-    };
-  }, [refreshProducts, refreshStudents, refreshPromoCodes]);
+  }, [isAdmin, refreshProducts, refreshStudents, refreshPromoCodes, refreshOrders]);
 
   const addProduct = async (product: Omit<Product, 'id'>) => {
     const created = await productsApi.create(product);
@@ -199,12 +226,22 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const updateOrderStatus = async (id: string, status: AdminOrder['status']) => {
+    const updated = await ordersAdminApi.updateStatus(id, status);
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === id ? { ...order, status: updated.status } : order
+      )
+    );
+  };
+
   return (
     <AdminContext.Provider
       value={{
         products,
         students,
         promoCodes,
+        orders,
         isProductsLoading,
         isProtectedDataLoading,
         productsError,
@@ -218,6 +255,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         addPromoCode,
         updatePromoCode,
         deletePromoCode,
+        updateOrderStatus,
         validatePromoCode,
         usePromoCode,
       }}

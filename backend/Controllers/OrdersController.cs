@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 using System.Security.Claims;
 using EquipamentosMedicosApi.Data;
 using EquipamentosMedicosApi.DTOs;
@@ -13,6 +14,14 @@ namespace EquipamentosMedicosApi.Controllers
     [Authorize]
     public class OrdersController : ControllerBase
     {
+        private static readonly HashSet<string> AllowedStatuses = new()
+        {
+            "Pendente",
+            "Processando",
+            "Concluído",
+            "Cancelado"
+        };
+
         private readonly AppDbContext _context;
 
         public OrdersController(AppDbContext context)
@@ -29,6 +38,34 @@ namespace EquipamentosMedicosApi.Controllers
 
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
                 return Unauthorized();
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.ID == userId);
+            if (user == null)
+                return Unauthorized();
+
+            if (request.Itens.Count == 0)
+                return BadRequest(new { message = "Pedido deve possuir ao menos um item." });
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            var productIds = request.Itens.Select(i => i.ProdutoId).Distinct().ToList();
+            var products = await _context.Products
+                .Where(p => productIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id);
+
+            foreach (var item in request.Itens)
+            {
+                if (!products.TryGetValue(item.ProdutoId, out var product))
+                    return BadRequest(new { message = $"Produto #{item.ProdutoId} não encontrado." });
+
+                if (item.Quantidade <= 0)
+                    return BadRequest(new { message = "Quantidade deve ser maior que zero." });
+
+                var currentStock = product.Estoque ?? 0;
+                if (currentStock < item.Quantidade)
+                    return BadRequest(new { message = $"Estoque/vagas insuficientes para {product.Nome}." });
+
+                product.Estoque = currentStock - item.Quantidade;
+            }
 
             var order = new Order
             {
@@ -48,6 +85,68 @@ namespace EquipamentosMedicosApi.Controllers
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
+
+            foreach (var item in request.Itens)
+            {
+                var product = products[item.ProdutoId];
+                if (product.TipoProduto != "course")
+                    continue;
+
+                var student = await _context.Students.FirstOrDefaultAsync(s =>
+                    s.Email == user.Email &&
+                    s.CourseId == product.Id.ToString());
+
+                if (student == null)
+                {
+                    student = new Student
+                    {
+                        Name = user.Nome,
+                        Email = user.Email,
+                        Phone = user.Phone,
+                        CourseId = product.Id.ToString(),
+                        CourseName = product.Nome,
+                        EnrollmentDate = DateTime.UtcNow.ToString("yyyy-MM-dd"),
+                        Status = "active"
+                    };
+
+                    _context.Students.Add(student);
+                    await _context.SaveChangesAsync();
+                }
+
+                var courseClass = await _context.CourseClasses
+                    .FirstOrDefaultAsync(c => c.ProdutoId == product.Id);
+
+                if (courseClass == null)
+                {
+                    courseClass = new CourseClass
+                    {
+                        ProdutoId = product.Id,
+                        DataRealizacao = ParseCourseDate(product.Date),
+                        Local = product.Location,
+                        Instructor = product.Instructor,
+                        VafasDisponiveis = (product.Estoque ?? 0) + item.Quantidade
+                    };
+
+                    _context.CourseClasses.Add(courseClass);
+                    await _context.SaveChangesAsync();
+                }
+
+                courseClass.VafasDisponiveis = Math.Max(0, courseClass.VafasDisponiveis - item.Quantidade);
+
+                for (var i = 0; i < item.Quantidade; i++)
+                {
+                    _context.Enrollments.Add(new Enrollment
+                    {
+                        ClassId = courseClass.Id,
+                        StudentId = student.Id,
+                        OrderId = order.Id,
+                        Status = "active"
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             return CreatedAtAction(nameof(GetMyOrders), new { id = order.Id },
                 new { message = "Pedido criado com sucesso!", orderId = order.Id, total = order.Total });
@@ -87,6 +186,70 @@ namespace EquipamentosMedicosApi.Controllers
                 .ToListAsync();
 
             return Ok(orders);
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllOrders()
+        {
+            var orders = await _context.Orders
+                .Include(o => o.Usuario)
+                .Include(o => o.Itens)
+                    .ThenInclude(i => i.Produto)
+                .OrderByDescending(o => o.DataPedido)
+                .Select(o => new
+                {
+                    o.Id,
+                    o.DataPedido,
+                    o.Status,
+                    o.Total,
+                    o.ValorFrete,
+                    Usuario = o.Usuario == null ? null : new
+                    {
+                        id = o.Usuario.ID,
+                        nome = o.Usuario.Nome,
+                        email = o.Usuario.Email
+                    },
+                    Itens = o.Itens.Select(i => new
+                    {
+                        i.ProdutoId,
+                        Nome = i.Produto != null ? i.Produto.Nome : string.Empty,
+                        TipoProduto = i.Produto != null ? i.Produto.TipoProduto : "equipment",
+                        i.Quantidade,
+                        i.PrecoUnitario
+                    })
+                })
+                .ToListAsync();
+
+            return Ok(orders);
+        }
+
+        [HttpPut("{id}/status")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateOrderStatusDTO request)
+        {
+            var status = request.Status.Trim();
+            if (!AllowedStatuses.Contains(status))
+                return BadRequest(new { message = "Status inválido." });
+
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
+            if (order == null)
+                return NotFound(new { message = "Pedido não encontrado." });
+
+            order.Status = status;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { order.Id, order.Status });
+        }
+
+        private static DateTime ParseCourseDate(string date)
+        {
+            var firstDate = date.Split('-', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+
+            if (DateTime.TryParseExact(firstDate, "dd/MM/yyyy", CultureInfo.GetCultureInfo("pt-BR"), DateTimeStyles.None, out var parsed))
+                return DateTime.SpecifyKind(parsed, DateTimeKind.Utc);
+
+            return DateTime.UtcNow;
         }
     }
 }

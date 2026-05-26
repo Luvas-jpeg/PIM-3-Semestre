@@ -12,7 +12,7 @@ namespace EquipamentosMedicosApi.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<CourseClass> CourseClasses { get; set; }
-        public DbSet<Inscricao> Inscricoes { get; set; }
+        public DbSet<Enrollment> Enrollments { get; set; }
         public DbSet<Student> Students { get; set; }
         public DbSet<PromoCode> PromoCodes { get; set; }
 

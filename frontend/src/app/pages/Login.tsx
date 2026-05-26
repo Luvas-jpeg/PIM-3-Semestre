@@ -40,6 +40,8 @@ export default function Login() {
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const name = String(formData.get('name'));
     const email = String(formData.get('email'));
+    const cpf = String(formData.get('cpf'));
+    const phone = String(formData.get('phone'));
     const password = String(formData.get('password'));
     const confirmPassword = String(formData.get('confirm-password'));
 
@@ -50,7 +52,7 @@ export default function Login() {
     }
 
     try {
-      await register(name, email, password);
+      await register(name, email, password, cpf, phone);
       toast.success('Cadastro realizado com sucesso!');
       navigate('/');
     } catch (error) {

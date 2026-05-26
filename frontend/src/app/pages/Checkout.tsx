@@ -1,23 +1,42 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { Check, CreditCard, MapPin, Smartphone, Tag, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { Header } from '../components/Header';
 import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Separator } from '../components/ui/separator';
+import { useAdmin } from '../context/AdminContext';
 import { useCart } from '../context/CartContext';
 import { useUser } from '../context/UserContext';
-import { useAdmin } from '../context/AdminContext';
-import { CreditCard, Smartphone, Tag, Check, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { formatCEP } from '../utils/formatters';
+
+const emptyAddress = {
+  street: '',
+  number: '',
+  complement: '',
+  neighborhood: '',
+  city: '',
+  state: '',
+  zipCode: '',
+};
 
 export default function Checkout() {
   const navigate = useNavigate();
   const { cart, total, clearCart } = useCart();
-  const { addOrder, isAuthenticated } = useUser();
+  const { addOrder, isAuthenticated, user, updateProfile } = useUser();
   const { validatePromoCode, usePromoCode } = useAdmin();
 
   const [paymentMethod, setPaymentMethod] = useState<'debit' | 'credit' | 'pix'>('credit');
@@ -27,11 +46,29 @@ export default function Checkout() {
   const [promoError, setPromoError] = useState('');
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
+  const [address, setAddress] = useState(() => user?.address ?? emptyAddress);
 
   if (cart.length === 0) {
     navigate('/');
     return null;
   }
+
+  const discount = appliedPromo
+    ? appliedPromo.type === 'percentage'
+      ? total * (appliedPromo.discount / 100)
+      : appliedPromo.discount
+    : 0;
+  const finalTotal = Math.max(0, total - discount);
+  const installmentValue = finalTotal / parseInt(installments);
+  const isAddressComplete = [
+    address.street,
+    address.number,
+    address.neighborhood,
+    address.city,
+    address.state,
+    address.zipCode,
+  ].every((field) => field.trim());
 
   const handleApplyPromo = async () => {
     setPromoError('');
@@ -39,18 +76,18 @@ export default function Checkout() {
 
     try {
       const validated = await validatePromoCode(promoCode);
-
-      if (validated) {
-        setAppliedPromo({
-          code: validated.code,
-          discount: validated.discount,
-          type: validated.discountType
-        });
-        toast.success('Código promocional aplicado!');
-      } else {
+      if (!validated) {
         setPromoError('Código inválido, expirado ou já utilizado');
         setAppliedPromo(null);
+        return;
       }
+
+      setAppliedPromo({
+        code: validated.code,
+        discount: validated.discount,
+        type: validated.discountType,
+      });
+      toast.success('Código promocional aplicado!');
     } catch (error) {
       setPromoError(error instanceof Error ? error.message : 'Não foi possível validar o código');
       setAppliedPromo(null);
@@ -59,25 +96,20 @@ export default function Checkout() {
     }
   };
 
-  const handleRemovePromo = () => {
-    setAppliedPromo(null);
-    setPromoCode('');
-    setPromoError('');
-  };
-
-  const calculateDiscount = () => {
-    if (!appliedPromo) return 0;
-
-    if (appliedPromo.type === 'percentage') {
-      return total * (appliedPromo.discount / 100);
-    } else {
-      return appliedPromo.discount;
+  const handleSaveAddress = async () => {
+    if (!isAddressComplete) {
+      toast.error('Preencha os campos obrigatórios do endereço');
+      return false;
     }
-  };
 
-  const discount = calculateDiscount();
-  const finalTotal = total - discount;
-  const installmentValue = finalTotal / parseInt(installments);
+    if (user) {
+      await updateProfile({ address });
+    }
+
+    setIsAddressDialogOpen(false);
+    toast.success('Endereço salvo');
+    return true;
+  };
 
   const handleFinishOrder = async () => {
     if (!isAuthenticated) {
@@ -86,9 +118,19 @@ export default function Checkout() {
       return;
     }
 
+    if (!isAddressComplete) {
+      setIsAddressDialogOpen(true);
+      toast.error('Preencha o endereço de entrega para finalizar o pedido');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
+      if (user) {
+        await updateProfile({ address });
+      }
+
       if (appliedPromo) {
         const validatedPromo = await validatePromoCode(appliedPromo.code);
         if (validatedPromo) {
@@ -97,12 +139,12 @@ export default function Checkout() {
       }
 
       await addOrder({
-        items: cart.map(item => ({
+        items: cart.map((item) => ({
           id: item.id,
           name: item.name,
           price: item.price,
           quantity: item.quantity,
-          type: item.type
+          type: item.type,
         })),
         total,
         discount,
@@ -110,12 +152,12 @@ export default function Checkout() {
         paymentMethod,
         installments: paymentMethod === 'credit' ? parseInt(installments) : undefined,
         promoCode: appliedPromo?.code,
-        status: 'pending'
+        status: 'pending',
       });
 
       clearCart();
       toast.success('Pedido realizado com sucesso!');
-      navigate('/profile');
+      navigate('/order-success');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Não foi possível finalizar o pedido');
     } finally {
@@ -128,21 +170,19 @@ export default function Checkout() {
       <Header />
 
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8 bg-gradient-to-r from-red-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <h1 className="mb-8 bg-gradient-to-r from-red-600 via-purple-600 to-pink-600 bg-clip-text text-3xl font-bold text-transparent">
           Finalizar Pedido
         </h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Resumo do Pedido */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Itens */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
             <Card>
               <CardHeader>
                 <CardTitle>Itens do Pedido</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {cart.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center">
+                  <div key={item.id} className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">{item.name}</p>
                       <p className="text-sm text-gray-500">Quantidade: {item.quantity}</p>
@@ -155,7 +195,35 @@ export default function Checkout() {
               </CardContent>
             </Card>
 
-            {/* Código Promocional */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="size-5 text-purple-600" />
+                  Endereço de Entrega
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                {isAddressComplete ? (
+                  <div className="text-sm text-gray-600">
+                    <p className="font-medium text-gray-900">
+                      {address.street}, {address.number}
+                    </p>
+                    <p>
+                      {address.neighborhood} - {address.city}/{address.state}
+                    </p>
+                    <p>CEP {address.zipCode}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600">
+                    Informe o endereço para entrega antes de finalizar o pedido.
+                  </p>
+                )}
+                <Button variant="outline" onClick={() => setIsAddressDialogOpen(true)}>
+                  {isAddressComplete ? 'Alterar endereço' : 'Adicionar endereço'}
+                </Button>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -170,7 +238,7 @@ export default function Checkout() {
                       <Input
                         placeholder="Digite o código"
                         value={promoCode}
-                        onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                        onChange={(event) => setPromoCode(event.target.value.toUpperCase())}
                         className="flex-1"
                       />
                       <Button onClick={handleApplyPromo} variant="outline" disabled={isApplyingPromo}>
@@ -178,14 +246,14 @@ export default function Checkout() {
                       </Button>
                     </div>
                     {promoError && (
-                      <p className="text-sm text-red-600 flex items-center gap-1">
+                      <p className="flex items-center gap-1 text-sm text-red-600">
                         <X className="size-4" />
                         {promoError}
                       </p>
                     )}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 p-3">
                     <div className="flex items-center gap-2">
                       <Check className="size-5 text-green-600" />
                       <div>
@@ -197,7 +265,15 @@ export default function Checkout() {
                         </p>
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost" onClick={handleRemovePromo}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setAppliedPromo(null);
+                        setPromoCode('');
+                        setPromoError('');
+                      }}
+                    >
                       <X className="size-4" />
                     </Button>
                   </div>
@@ -205,32 +281,31 @@ export default function Checkout() {
               </CardContent>
             </Card>
 
-            {/* Forma de Pagamento */}
             <Card>
               <CardHeader>
                 <CardTitle>Forma de Pagamento</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <RadioGroup value={paymentMethod} onValueChange={(value: any) => setPaymentMethod(value)}>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as typeof paymentMethod)}>
+                  <div className="flex cursor-pointer items-center space-x-2 rounded-lg border p-4 hover:bg-gray-50">
                     <RadioGroupItem value="credit" id="credit" />
-                    <Label htmlFor="credit" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Label htmlFor="credit" className="flex flex-1 cursor-pointer items-center gap-2">
                       <CreditCard className="size-5 text-purple-600" />
                       Cartão de Crédito
                     </Label>
                   </div>
 
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <div className="flex cursor-pointer items-center space-x-2 rounded-lg border p-4 hover:bg-gray-50">
                     <RadioGroupItem value="debit" id="debit" />
-                    <Label htmlFor="debit" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Label htmlFor="debit" className="flex flex-1 cursor-pointer items-center gap-2">
                       <CreditCard className="size-5 text-red-600" />
                       Cartão de Débito
                     </Label>
                   </div>
 
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <div className="flex cursor-pointer items-center space-x-2 rounded-lg border p-4 hover:bg-gray-50">
                     <RadioGroupItem value="pix" id="pix" />
-                    <Label htmlFor="pix" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Label htmlFor="pix" className="flex flex-1 cursor-pointer items-center gap-2">
                       <Smartphone className="size-5 text-pink-600" />
                       PIX
                     </Label>
@@ -238,7 +313,7 @@ export default function Checkout() {
                 </RadioGroup>
 
                 {paymentMethod === 'credit' && (
-                  <div className="pt-4 border-t">
+                  <div className="border-t pt-4">
                     <Label htmlFor="installments">Número de Parcelas</Label>
                     <Select value={installments} onValueChange={setInstallments}>
                       <SelectTrigger className="mt-2">
@@ -259,7 +334,6 @@ export default function Checkout() {
             </Card>
           </div>
 
-          {/* Resumo de Valores */}
           <div>
             <Card className="sticky top-24">
               <CardHeader>
@@ -282,13 +356,11 @@ export default function Checkout() {
 
                 <div className="flex justify-between text-lg">
                   <span className="font-semibold">Total</span>
-                  <span className="font-bold text-purple-600">
-                    R$ {finalTotal.toFixed(2)}
-                  </span>
+                  <span className="font-bold text-purple-600">R$ {finalTotal.toFixed(2)}</span>
                 </div>
 
                 {paymentMethod === 'credit' && parseInt(installments) > 1 && (
-                  <p className="text-sm text-gray-600 text-center">
+                  <p className="text-center text-sm text-gray-600">
                     {installments}x de R$ {installmentValue.toFixed(2)}
                   </p>
                 )}
@@ -302,7 +374,7 @@ export default function Checkout() {
                   {isSubmitting ? 'Finalizando...' : 'Finalizar Pedido'}
                 </Button>
 
-                <p className="text-xs text-center text-gray-500">
+                <p className="text-center text-xs text-gray-500">
                   Ao finalizar, você concorda com nossos termos de serviço
                 </p>
               </CardContent>
@@ -310,6 +382,84 @@ export default function Checkout() {
           </div>
         </div>
       </div>
+
+      <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Endereço de Entrega</DialogTitle>
+            <DialogDescription>
+              Preencha o endereço para finalizar o pedido. Ele também ficará salvo no seu perfil.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="checkout-street">Rua</Label>
+              <Input
+                id="checkout-street"
+                value={address.street}
+                onChange={(event) => setAddress({ ...address, street: event.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="checkout-number">Número</Label>
+              <Input
+                id="checkout-number"
+                value={address.number}
+                onChange={(event) => setAddress({ ...address, number: event.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="checkout-complement">Complemento</Label>
+              <Input
+                id="checkout-complement"
+                value={address.complement ?? ''}
+                onChange={(event) => setAddress({ ...address, complement: event.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="checkout-neighborhood">Bairro</Label>
+              <Input
+                id="checkout-neighborhood"
+                value={address.neighborhood}
+                onChange={(event) => setAddress({ ...address, neighborhood: event.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="checkout-city">Cidade</Label>
+              <Input
+                id="checkout-city"
+                value={address.city}
+                onChange={(event) => setAddress({ ...address, city: event.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="checkout-state">Estado</Label>
+              <Input
+                id="checkout-state"
+                value={address.state}
+                onChange={(event) => setAddress({ ...address, state: event.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="checkout-zipCode">CEP</Label>
+              <Input
+                id="checkout-zipCode"
+                value={address.zipCode}
+                onChange={(event) => setAddress({ ...address, zipCode: formatCEP(event.target.value) })}
+                maxLength={9}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddressDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveAddress}>Salvar endereço</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -17,12 +17,19 @@ if (string.IsNullOrWhiteSpace(connectionString))
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// --- CORS (permite requisições do frontend) ---
+// --- CORS (permite requisições do frontend local) ---
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:5174")
+        policy.SetIsOriginAllowed(origin =>
+              {
+                  if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                      return false;
+
+                  return uri.Scheme == "http"
+                      && (uri.Host == "localhost" || uri.Host == "127.0.0.1");
+              })
               .AllowAnyHeader()
               .AllowAnyMethod();
     });

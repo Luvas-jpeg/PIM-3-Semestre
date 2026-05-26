@@ -33,6 +33,10 @@ namespace backend.Migrations
                     b.Property<DateTime>("DataRealizacao")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Instructor")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Local")
                         .IsRequired()
                         .HasColumnType("text");
@@ -50,7 +54,7 @@ namespace backend.Migrations
                     b.ToTable("CourseClasses");
                 });
 
-            modelBuilder.Entity("EquipamentosMedicosApi.Models.Inscricao", b =>
+            modelBuilder.Entity("EquipamentosMedicosApi.Models.Enrollment", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -58,31 +62,28 @@ namespace backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("DocumentoParticipante")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("NomeParticipante")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("PedidoId")
+                    b.Property<int>("ClassId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("StatusInscricao")
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("TurmaId")
+                    b.Property<int>("StudentId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PedidoId");
+                    b.HasIndex("ClassId");
 
-                    b.HasIndex("TurmaId");
+                    b.HasIndex("OrderId");
 
-                    b.ToTable("Inscricoes");
+                    b.HasIndex("StudentId");
+
+                    b.ToTable("Enrollments");
                 });
 
             modelBuilder.Entity("EquipamentosMedicosApi.Models.Order", b =>
@@ -469,11 +470,51 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Cpf")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Complement")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Neighborhood")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("SenhaHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Street")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ZipCode")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -493,23 +534,31 @@ namespace backend.Migrations
                     b.Navigation("Produto");
                 });
 
-            modelBuilder.Entity("EquipamentosMedicosApi.Models.Inscricao", b =>
+            modelBuilder.Entity("EquipamentosMedicosApi.Models.Enrollment", b =>
                 {
-                    b.HasOne("EquipamentosMedicosApi.Models.Order", "Pedido")
-                        .WithMany("InscricoesGeradas")
-                        .HasForeignKey("PedidoId")
+                    b.HasOne("EquipamentosMedicosApi.Models.CourseClass", "Class")
+                        .WithMany("Enrollments")
+                        .HasForeignKey("ClassId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("EquipamentosMedicosApi.Models.CourseClass", "Turma")
-                        .WithMany("Inscricoes")
-                        .HasForeignKey("TurmaId")
+                    b.HasOne("EquipamentosMedicosApi.Models.Order", "Order")
+                        .WithMany("Enrollments")
+                        .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Pedido");
+                    b.HasOne("EquipamentosMedicosApi.Models.Student", "Student")
+                        .WithMany("Enrollments")
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("Turma");
+                    b.Navigation("Class");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("EquipamentosMedicosApi.Models.Order", b =>
@@ -550,12 +599,12 @@ namespace backend.Migrations
 
             modelBuilder.Entity("EquipamentosMedicosApi.Models.CourseClass", b =>
                 {
-                    b.Navigation("Inscricoes");
+                    b.Navigation("Enrollments");
                 });
 
             modelBuilder.Entity("EquipamentosMedicosApi.Models.Order", b =>
                 {
-                    b.Navigation("InscricoesGeradas");
+                    b.Navigation("Enrollments");
 
                     b.Navigation("Itens");
                 });
@@ -563,6 +612,11 @@ namespace backend.Migrations
             modelBuilder.Entity("EquipamentosMedicosApi.Models.Product", b =>
                 {
                     b.Navigation("Turmas");
+                });
+
+            modelBuilder.Entity("EquipamentosMedicosApi.Models.Student", b =>
+                {
+                    b.Navigation("Enrollments");
                 });
 
             modelBuilder.Entity("EquipamentosMedicosApi.Models.User", b =>

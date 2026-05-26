@@ -6,6 +6,8 @@ namespace EquipamentosMedicosApi.DTOs
         public string Nome { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Senha { get; set; } = string.Empty;
+        public string Cpf { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
         public string Cargo { get; set; } = "Cliente";
     }
 
@@ -17,6 +19,38 @@ namespace EquipamentosMedicosApi.DTOs
     }
 
     // Resposta de produto (evita referências circulares)
+    public class UserResponseDTO
+    {
+        public int Id { get; set; }
+        public string Nome { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Cpf { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string Street { get; set; } = string.Empty;
+        public string Number { get; set; } = string.Empty;
+        public string Complement { get; set; } = string.Empty;
+        public string Neighborhood { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
+        public string State { get; set; } = string.Empty;
+        public string ZipCode { get; set; } = string.Empty;
+        public string Role { get; set; } = "Cliente";
+    }
+
+    public class UpdateProfileDTO
+    {
+        public string Nome { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Cpf { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string Street { get; set; } = string.Empty;
+        public string Number { get; set; } = string.Empty;
+        public string Complement { get; set; } = string.Empty;
+        public string Neighborhood { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
+        public string State { get; set; } = string.Empty;
+        public string ZipCode { get; set; } = string.Empty;
+    }
+
     public class ProductResponseDTO
     {
         public int Id { get; set; }
@@ -58,6 +92,11 @@ namespace EquipamentosMedicosApi.DTOs
         public int ProdutoId { get; set; }
         public int Quantidade { get; set; }
         public decimal PrecoUnitario { get; set; }
+    }
+
+    public class UpdateOrderStatusDTO
+    {
+        public string Status { get; set; } = "Pendente";
     }
 
     public class StudentDTO

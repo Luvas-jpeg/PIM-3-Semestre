@@ -10,5 +10,7 @@ namespace EquipamentosMedicosApi.Models
         public string CourseName { get; set; } = string.Empty;
         public string EnrollmentDate { get; set; } = string.Empty;
         public string Status { get; set; } = "active";
+
+        public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
     }
 }

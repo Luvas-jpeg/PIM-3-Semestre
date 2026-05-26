@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from '../components/Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -9,13 +9,21 @@ import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { useUser } from '../context/UserContext';
 import { formatCPF, formatPhone, formatCEP } from '../utils/formatters';
-import { User, Package, Edit, Save, X, Calendar, CreditCard } from 'lucide-react';
+import { User, Package, Edit, Save, X, Calendar, CreditCard, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router';
 
 export default function Profile() {
-  const { user, orders, updateProfile } = useUser();
+  const { user, orders, updateProfile, logout } = useUser();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(user || {});
+
+  useEffect(() => {
+    if (user) {
+      setFormData(user);
+    }
+  }, [user]);
 
   if (!user) {
     return (
@@ -29,7 +37,7 @@ export default function Profile() {
     );
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validações básicas
     if (!formData.name || !formData.email) {
       toast.error('Nome e email são obrigatórios');
@@ -41,14 +49,23 @@ export default function Profile() {
       return;
     }
 
-    updateProfile(formData);
-    setIsEditing(false);
-    toast.success('Perfil atualizado com sucesso!');
+    try {
+      await updateProfile(formData);
+      setIsEditing(false);
+      toast.success('Perfil atualizado com sucesso!');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível atualizar o perfil');
+    }
   };
 
   const handleCancel = () => {
     setFormData(user);
     setIsEditing(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   const getStatusBadge = (status: string) => {
@@ -77,9 +94,15 @@ export default function Profile() {
       <Header />
 
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8 bg-gradient-to-r from-red-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-          Meu Perfil
-        </h1>
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-red-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            Meu Perfil
+          </h1>
+          <Button variant="outline" onClick={handleLogout} className="gap-2 self-start sm:self-auto">
+            <LogOut className="size-4" />
+            Sair da conta
+          </Button>
+        </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
           <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">

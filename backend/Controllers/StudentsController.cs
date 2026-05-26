@@ -9,7 +9,7 @@ namespace EquipamentosMedicosApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public class StudentsController : ControllerBase
     {
         private static readonly HashSet<string> AllowedStatuses = new()

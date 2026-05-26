@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router';
-import { ShoppingCart, User, Heart, Menu, LayoutDashboard } from 'lucide-react';
+import { ShoppingCart, User, Heart, Menu, LayoutDashboard, GraduationCap } from 'lucide-react';
 import { Button } from './ui/button';
 import { useCart } from '../context/CartContext';
 import { useUser } from '../context/UserContext';
@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
 
 export function Header() {
   const { cart } = useCart();
-  const { isAuthenticated, logout } = useUser();
+  const { isAuthenticated, isAdmin, logout } = useUser();
   const navigate = useNavigate();
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -38,18 +38,18 @@ export function Header() {
             <Link to="/" className="text-sm font-medium transition-colors hover:text-pink-600">
               Início
             </Link>
-            <Link to="/?filter=equipment" className="text-sm font-medium transition-colors hover:text-pink-600">
-              Equipamentos
-            </Link>
-            <Link to="/?filter=course" className="text-sm font-medium transition-colors hover:text-pink-600">
-              Cursos
-            </Link>
+            {isAuthenticated && (
+              <Link to="/my-courses" className="text-sm font-medium transition-colors hover:text-pink-600 flex items-center gap-1">
+                <GraduationCap className="size-4" />
+                Meus Cursos
+              </Link>
+            )}
             {isAuthenticated && (
               <Link to="/profile" className="text-sm font-medium transition-colors hover:text-pink-600">
                 Meu Perfil
               </Link>
             )}
-            {isAuthenticated && (
+            {isAdmin && (
               <Link
                 to="/admin"
                 className="text-sm font-medium transition-colors hover:text-purple-600 flex items-center gap-1"
@@ -98,21 +98,24 @@ export function Header() {
                   <Link to="/" className="text-lg font-medium transition-colors hover:text-pink-600">
                     Início
                   </Link>
-                  <Link to="/?filter=equipment" className="text-lg font-medium transition-colors hover:text-pink-600">
-                    Equipamentos
-                  </Link>
-                  <Link to="/?filter=course" className="text-lg font-medium transition-colors hover:text-pink-600">
-                    Cursos
-                  </Link>
                   {isAuthenticated ? (
                     <>
                       <Link
-                        to="/admin"
-                        className="text-lg font-medium transition-colors hover:text-purple-600 flex items-center gap-2"
+                        to="/my-courses"
+                        className="text-lg font-medium transition-colors hover:text-pink-600 flex items-center gap-2"
                       >
-                        <LayoutDashboard className="size-5" />
-                        Admin
+                        <GraduationCap className="size-5" />
+                        Meus Cursos
                       </Link>
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          className="text-lg font-medium transition-colors hover:text-purple-600 flex items-center gap-2"
+                        >
+                          <LayoutDashboard className="size-5" />
+                          Admin
+                        </Link>
+                      )}
                       <Link to="/profile" className="text-lg font-medium transition-colors hover:text-pink-600 flex items-center gap-2">
                         <User className="size-5" />
                         Meu Perfil
