@@ -8,7 +8,7 @@ import { Label } from '../components/ui/label';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { useUser } from '../context/UserContext';
-import { formatCPF, formatPhone, formatCEP } from '../utils/formatters';
+import { formatCPF, formatPhone, formatCEP, formatCurrency, isValidCPF } from '../utils/formatters';
 import { User, Package, Edit, Save, X, Calendar, CreditCard, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router';
@@ -49,6 +49,11 @@ export default function Profile() {
       return;
     }
 
+    if (!isValidCPF(formData.cpf ?? '')) {
+      toast.error('CPF invalido');
+      return;
+    }
+
     try {
       await updateProfile(formData);
       setIsEditing(false);
@@ -61,6 +66,44 @@ export default function Profile() {
   const handleCancel = () => {
     setFormData(user);
     setIsEditing(false);
+  };
+
+  const handleZipCodeChange = async (value: string) => {
+    const zipCode = formatCEP(value);
+    const digits = zipCode.replace(/\D/g, '');
+
+    setFormData((current) => ({
+      ...current,
+      address: { ...current.address!, zipCode }
+    }));
+
+    if (digits.length !== 8) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+      const address = await response.json();
+
+      if (address.erro) {
+        toast.error('CEP nao encontrado');
+        return;
+      }
+
+      setFormData((current) => ({
+        ...current,
+        address: {
+          ...current.address!,
+          zipCode,
+          street: address.logradouro || current.address?.street || '',
+          neighborhood: address.bairro || current.address?.neighborhood || '',
+          city: address.localidade || current.address?.city || '',
+          state: address.uf || current.address?.state || ''
+        }
+      }));
+    } catch {
+      toast.error('Nao foi possivel buscar o CEP');
+    }
   };
 
   const handleLogout = () => {
@@ -287,11 +330,9 @@ export default function Profile() {
                       <Input
                         id="zipCode"
                         value={formData.address?.zipCode}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          address: { ...formData.address!, zipCode: formatCEP(e.target.value) }
-                        })}
+                        onChange={(e) => handleZipCodeChange(e.target.value)}
                         disabled={!isEditing}
+                        inputMode="numeric"
                         maxLength={9}
                       />
                     </div>
@@ -341,7 +382,7 @@ export default function Profile() {
                               {item.quantity}x {item.name}
                             </span>
                             <span className="font-medium">
-                              R$ {(item.price * item.quantity).toFixed(2)}
+                              {formatCurrency(item.price * item.quantity)}
                             </span>
                           </div>
                         ))}
@@ -353,7 +394,7 @@ export default function Profile() {
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Subtotal</span>
-                          <span>R$ {order.total.toFixed(2)}</span>
+                          <span>{formatCurrency(order.total)}</span>
                         </div>
 
                         {order.discount > 0 && (
@@ -361,14 +402,14 @@ export default function Profile() {
                             <span>
                               Desconto {order.promoCode && `(${order.promoCode})`}
                             </span>
-                            <span>- R$ {order.discount.toFixed(2)}</span>
+                            <span>- {formatCurrency(order.discount)}</span>
                           </div>
                         )}
 
                         <div className="flex justify-between font-semibold text-base pt-2 border-t">
                           <span>Total</span>
                           <span className="text-purple-600">
-                            R$ {order.finalTotal.toFixed(2)}
+                            {formatCurrency(order.finalTotal)}
                           </span>
                         </div>
                       </div>

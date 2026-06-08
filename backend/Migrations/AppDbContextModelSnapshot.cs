@@ -97,6 +97,17 @@ namespace backend.Migrations
                     b.Property<DateTime>("DataPedido")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int?>("Installments")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PromoCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");

@@ -21,7 +21,7 @@ import { Separator } from '../components/ui/separator';
 import { useAdmin } from '../context/AdminContext';
 import { useCart } from '../context/CartContext';
 import { useUser } from '../context/UserContext';
-import { formatCEP } from '../utils/formatters';
+import { formatCEP, formatCurrency } from '../utils/formatters';
 
 const emptyAddress = {
   street: '',
@@ -37,7 +37,7 @@ export default function Checkout() {
   const navigate = useNavigate();
   const { cart, total, clearCart } = useCart();
   const { addOrder, isAuthenticated, user, updateProfile } = useUser();
-  const { validatePromoCode, usePromoCode } = useAdmin();
+  const { validatePromoCode, refreshProducts } = useAdmin();
 
   const [paymentMethod, setPaymentMethod] = useState<'debit' | 'credit' | 'pix'>('credit');
   const [installments, setInstallments] = useState('1');
@@ -131,13 +131,6 @@ export default function Checkout() {
         await updateProfile({ address });
       }
 
-      if (appliedPromo) {
-        const validatedPromo = await validatePromoCode(appliedPromo.code);
-        if (validatedPromo) {
-          await usePromoCode(validatedPromo.id);
-        }
-      }
-
       await addOrder({
         items: cart.map((item) => ({
           id: item.id,
@@ -155,6 +148,7 @@ export default function Checkout() {
         status: 'pending',
       });
 
+      await refreshProducts();
       clearCart();
       toast.success('Pedido realizado com sucesso!');
       navigate('/order-success');
@@ -188,7 +182,7 @@ export default function Checkout() {
                       <p className="text-sm text-gray-500">Quantidade: {item.quantity}</p>
                     </div>
                     <p className="font-semibold text-purple-600">
-                      R$ {(item.price * item.quantity).toFixed(2)}
+                      {formatCurrency(item.price * item.quantity)}
                     </p>
                   </div>
                 ))}
@@ -261,7 +255,7 @@ export default function Checkout() {
                         <p className="text-sm text-green-600">
                           {appliedPromo.type === 'percentage'
                             ? `${appliedPromo.discount}% de desconto`
-                            : `R$ ${appliedPromo.discount.toFixed(2)} de desconto`}
+                            : `${formatCurrency(appliedPromo.discount)} de desconto`}
                         </p>
                       </div>
                     </div>
@@ -322,7 +316,7 @@ export default function Checkout() {
                       <SelectContent>
                         {[1, 2, 3, 4, 5, 6, 10, 12].map((num) => (
                           <SelectItem key={num} value={num.toString()}>
-                            {num}x de R$ {(finalTotal / num).toFixed(2)}
+                            {num}x de {formatCurrency(finalTotal / num)}
                             {num === 1 ? ' à vista' : ''}
                           </SelectItem>
                         ))}
@@ -342,13 +336,13 @@ export default function Checkout() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
-                  <span className="font-medium">R$ {total.toFixed(2)}</span>
+                  <span className="font-medium">{formatCurrency(total)}</span>
                 </div>
 
                 {appliedPromo && (
                   <div className="flex justify-between text-green-600">
                     <span>Desconto ({appliedPromo.code})</span>
-                    <span className="font-medium">- R$ {discount.toFixed(2)}</span>
+                    <span className="font-medium">- {formatCurrency(discount)}</span>
                   </div>
                 )}
 
@@ -356,12 +350,12 @@ export default function Checkout() {
 
                 <div className="flex justify-between text-lg">
                   <span className="font-semibold">Total</span>
-                  <span className="font-bold text-purple-600">R$ {finalTotal.toFixed(2)}</span>
+                  <span className="font-bold text-purple-600">{formatCurrency(finalTotal)}</span>
                 </div>
 
                 {paymentMethod === 'credit' && parseInt(installments) > 1 && (
                   <p className="text-center text-sm text-gray-600">
-                    {installments}x de R$ {installmentValue.toFixed(2)}
+                    {installments}x de {formatCurrency(installmentValue)}
                   </p>
                 )}
 

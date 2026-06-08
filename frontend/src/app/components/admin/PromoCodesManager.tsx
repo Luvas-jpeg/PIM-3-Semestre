@@ -42,6 +42,7 @@ import { Switch } from '../ui/switch';
 import { Plus, Edit, Trash2, Tag, Calendar, Percent, DollarSign } from 'lucide-react';
 import { PromoCode } from '../../context/AdminContext';
 import { toast } from 'sonner';
+import { formatCurrency } from '../../utils/formatters';
 
 export function PromoCodesManager() {
   const { promoCodes, addPromoCode, updatePromoCode, deletePromoCode } = useAdmin();
@@ -319,7 +320,7 @@ export function PromoCodesManager() {
                       <>
                         <DollarSign className="size-3 text-pink-600" />
                         <span className="font-semibold text-pink-600">
-                          R$ {promoCode.discount.toFixed(2)}
+                          {formatCurrency(promoCode.discount)}
                         </span>
                       </>
                     )}

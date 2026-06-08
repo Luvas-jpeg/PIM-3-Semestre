@@ -34,6 +34,50 @@ import {
 import { Plus, Edit, Trash2, Calendar, MapPin, User } from 'lucide-react';
 import type { Product } from '../../context/CartContext';
 import { toast } from 'sonner';
+import { formatCurrency } from '../../utils/formatters';
+
+const formatPriceInput = (value: string) => {
+  const digits = value.replace(/\D/g, '');
+
+  if (!digits) return '';
+
+  return (Number(digits) / 100).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
+const parsePriceInput = (value: string) => {
+  return Number(value.replace(/\./g, '').replace(',', '.')) || 0;
+};
+
+const formatDateForDisplay = (date: string) => {
+  if (!date) return '';
+
+  const [year, month, day] = date.split('-');
+  return `${day}/${month}/${year}`;
+};
+
+const formatCoursePeriod = (startDate: string, endDate: string) => {
+  if (startDate === endDate) return formatDateForDisplay(startDate);
+
+  return `${formatDateForDisplay(startDate)} - ${formatDateForDisplay(endDate)}`;
+};
+
+const parseCoursePeriod = (date: string) => {
+  const [start = '', end = ''] = date.split(' - ');
+
+  const toHtmlDate = (value: string) => {
+    const [day, month, year] = value.split('/');
+    return day && month && year ? `${year}-${month}-${day}` : '';
+  };
+
+  const startDate = toHtmlDate(start);
+  return {
+    startDate,
+    endDate: toHtmlDate(end) || startDate,
+  };
+};
 
 export function CoursesManager() {
   const { products, addProduct, updateProduct, deleteProduct } = useAdmin();
@@ -45,7 +89,8 @@ export function CoursesManager() {
     name: '',
     price: '',
     description: '',
-    date: '',
+    startDate: '',
+    endDate: '',
     location: '',
     instructor: '',
     stock: '',
@@ -59,7 +104,8 @@ export function CoursesManager() {
       name: '',
       price: '',
       description: '',
-      date: '',
+      startDate: '',
+      endDate: '',
       location: '',
       instructor: '',
       stock: '',
@@ -68,17 +114,22 @@ export function CoursesManager() {
   };
 
   const handleAdd = async () => {
-    if (!formData.name || !formData.price || !formData.description || !formData.date) {
+    if (!formData.name || !formData.price || !formData.description || !formData.startDate || !formData.endDate) {
       toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    if (formData.endDate < formData.startDate) {
+      toast.error('A data final nao pode ser anterior a data inicial');
       return;
     }
 
     try {
       await addProduct({
         name: formData.name,
-        price: parseFloat(formData.price),
+        price: parsePriceInput(formData.price),
         description: formData.description,
-        date: formData.date,
+        date: formatCoursePeriod(formData.startDate, formData.endDate),
         location: formData.location,
         instructor: formData.instructor,
         stock: parseInt(formData.stock) || 0,
@@ -95,12 +146,15 @@ export function CoursesManager() {
   };
 
   const handleEdit = (course: Product) => {
+    const { startDate, endDate } = parseCoursePeriod(course.date || '');
+
     setSelectedCourse(course);
     setFormData({
       name: course.name,
-      price: course.price.toString(),
+      price: formatPriceInput(Math.round(course.price * 100).toString()),
       description: course.description,
-      date: course.date || '',
+      startDate,
+      endDate,
       location: course.location || '',
       instructor: course.instructor || '',
       stock: course.stock?.toString() || '',
@@ -112,17 +166,22 @@ export function CoursesManager() {
   const handleUpdate = async () => {
     if (!selectedCourse) return;
 
-    if (!formData.name || !formData.price || !formData.description || !formData.date) {
+    if (!formData.name || !formData.price || !formData.description || !formData.startDate || !formData.endDate) {
       toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    if (formData.endDate < formData.startDate) {
+      toast.error('A data final nao pode ser anterior a data inicial');
       return;
     }
 
     try {
       await updateProduct(selectedCourse.id, {
         name: formData.name,
-        price: parseFloat(formData.price),
+        price: parsePriceInput(formData.price),
         description: formData.description,
-        date: formData.date,
+        date: formatCoursePeriod(formData.startDate, formData.endDate),
         location: formData.location,
         instructor: formData.instructor,
         stock: parseInt(formData.stock) || 0,
@@ -191,11 +250,11 @@ export function CoursesManager() {
                   <Label htmlFor="price">Valor (R$) *</Label>
                   <Input
                     id="price"
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="numeric"
                     value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="0.00"
+                    onChange={(e) => setFormData({ ...formData, price: formatPriceInput(e.target.value) })}
+                    placeholder="0,00"
                   />
                 </div>
 
@@ -211,14 +270,26 @@ export function CoursesManager() {
                 </div>
               </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="date">Data do Curso *</Label>
-                <Input
-                  id="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  placeholder="Ex: 15/04/2026 - 16/04/2026"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="startDate">Data inicial *</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="endDate">Data final *</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div className="grid gap-2">
@@ -317,7 +388,7 @@ export function CoursesManager() {
                   </div>
                 </TableCell>
                 <TableCell className="text-purple-600 font-semibold">
-                  R$ {course.price.toFixed(2)}
+                  {formatCurrency(course.price)}
                 </TableCell>
                 <TableCell>
                   <span className={course.stock && course.stock < 5 ? 'text-red-600' : 'text-green-600'}>
@@ -376,10 +447,10 @@ export function CoursesManager() {
                 <Label htmlFor="edit-price">Valor (R$) *</Label>
                 <Input
                   id="edit-price"
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="numeric"
                   value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, price: formatPriceInput(e.target.value) })}
                 />
               </div>
 
@@ -394,13 +465,26 @@ export function CoursesManager() {
               </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="edit-date">Data do Curso *</Label>
-              <Input
-                id="edit-date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-startDate">Data inicial *</Label>
+                <Input
+                  id="edit-startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="edit-endDate">Data final *</Label>
+                <Input
+                  id="edit-endDate"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                />
+              </div>
             </div>
 
             <div className="grid gap-2">

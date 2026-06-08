@@ -42,6 +42,8 @@ export interface AdminOrder {
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   total: number;
   shipping: number;
+  paymentMethod: 'debit' | 'credit' | 'pix';
+  installments?: number;
   items: AdminOrderItem[];
 }
 
@@ -54,6 +56,7 @@ interface AdminContextType {
   isProtectedDataLoading: boolean;
   productsError: string | null;
   protectedDataError: string | null;
+  refreshProducts: () => Promise<void>;
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
   updateProduct: (id: string, product: Partial<Product>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
@@ -246,6 +249,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         isProtectedDataLoading,
         productsError,
         protectedDataError,
+        refreshProducts,
         addProduct,
         updateProduct,
         deleteProduct,

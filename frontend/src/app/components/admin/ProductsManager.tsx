@@ -34,6 +34,22 @@ import {
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import type { Product } from '../../context/CartContext';
 import { toast } from 'sonner';
+import { formatCurrency } from '../../utils/formatters';
+
+const formatPriceInput = (value: string) => {
+  const digits = value.replace(/\D/g, '');
+
+  if (!digits) return '';
+
+  return (Number(digits) / 100).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
+const parsePriceInput = (value: string) => {
+  return Number(value.replace(/\./g, '').replace(',', '.')) || 0;
+};
 
 export function ProductsManager() {
   const { products, addProduct, updateProduct, deleteProduct } = useAdmin();
@@ -72,7 +88,7 @@ export function ProductsManager() {
     try {
       await addProduct({
         name: formData.name,
-        price: parseFloat(formData.price),
+        price: parsePriceInput(formData.price),
         description: formData.description,
         category: formData.category,
         stock: parseInt(formData.stock) || 0,
@@ -92,7 +108,7 @@ export function ProductsManager() {
     setSelectedProduct(product);
     setFormData({
       name: product.name,
-      price: product.price.toString(),
+      price: formatPriceInput(Math.round(product.price * 100).toString()),
       description: product.description,
       category: product.category || '',
       stock: product.stock?.toString() || '',
@@ -112,7 +128,7 @@ export function ProductsManager() {
     try {
       await updateProduct(selectedProduct.id, {
         name: formData.name,
-        price: parseFloat(formData.price),
+        price: parsePriceInput(formData.price),
         description: formData.description,
         category: formData.category,
         stock: parseInt(formData.stock) || 0,
@@ -181,11 +197,11 @@ export function ProductsManager() {
                   <Label htmlFor="price">Preço (R$) *</Label>
                   <Input
                     id="price"
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="numeric"
                     value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="0.00"
+                    onChange={(e) => setFormData({ ...formData, price: formatPriceInput(e.target.value) })}
+                    placeholder="0,00"
                   />
                 </div>
 
@@ -265,7 +281,7 @@ export function ProductsManager() {
                 <TableCell className="font-medium">{product.name}</TableCell>
                 <TableCell>{product.category}</TableCell>
                 <TableCell className="text-purple-600 font-semibold">
-                  R$ {product.price.toFixed(2)}
+                  {formatCurrency(product.price)}
                 </TableCell>
                 <TableCell>
                   <span className={product.stock && product.stock < 10 ? 'text-red-600' : 'text-green-600'}>
@@ -324,10 +340,10 @@ export function ProductsManager() {
                 <Label htmlFor="edit-price">Preço (R$) *</Label>
                 <Input
                   id="edit-price"
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="numeric"
                   value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, price: formatPriceInput(e.target.value) })}
                 />
               </div>
 

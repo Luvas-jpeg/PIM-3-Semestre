@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Heart } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUser } from '../context/UserContext';
+import { formatCPF, isValidCPF } from '../utils/formatters';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -48,6 +49,12 @@ export default function Login() {
     if (password !== confirmPassword) {
       setIsLoading(false);
       toast.error('As senhas não conferem');
+      return;
+    }
+
+    if (!isValidCPF(cpf)) {
+      setIsLoading(false);
+      toast.error('CPF invalido');
       return;
     }
 
@@ -159,6 +166,11 @@ export default function Login() {
                       name="cpf"
                       type="text"
                       placeholder="000.000.000-00"
+                      inputMode="numeric"
+                      maxLength={14}
+                      onChange={(e) => {
+                        e.currentTarget.value = formatCPF(e.currentTarget.value);
+                      }}
                       required
                     />
                   </div>

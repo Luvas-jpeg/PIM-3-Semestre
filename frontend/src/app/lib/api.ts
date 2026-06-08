@@ -42,6 +42,7 @@ export interface ApiOrderItem {
   tipoProduto?: 'equipment' | 'course';
   quantidade: number;
   precoUnitario: number;
+  status?: 'active' | 'completed' | 'cancelled' | null;
 }
 
 export interface ApiOrder {
@@ -50,6 +51,9 @@ export interface ApiOrder {
   status: string;
   total: number;
   valorFrete: number;
+  paymentMethod?: 'debit' | 'credit' | 'pix';
+  installments?: number | null;
+  promoCode?: string;
   itens: ApiOrderItem[];
 }
 
@@ -196,20 +200,28 @@ function toApiStatus(status: AdminOrder['status']) {
 }
 
 export function toOrder(order: ApiOrder): Order {
+  const items = order.itens.map((item) => ({
+    id: item.produtoId.toString(),
+    name: item.nome ?? `Produto #${item.produtoId}`,
+    price: Number(item.precoUnitario),
+    quantity: item.quantidade,
+    type: item.tipoProduto ?? 'equipment',
+    status: item.status ?? undefined,
+  }));
+  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const finalTotal = Number(order.total);
+  const discount = Math.max(0, total - finalTotal);
+
   return {
     id: order.id.toString(),
     userId: '',
-    items: order.itens.map((item) => ({
-      id: item.produtoId.toString(),
-      name: item.nome ?? `Produto #${item.produtoId}`,
-      price: Number(item.precoUnitario),
-      quantity: item.quantidade,
-      type: item.tipoProduto ?? 'equipment',
-    })),
-    total: Number(order.total),
-    discount: 0,
-    finalTotal: Number(order.total),
-    paymentMethod: 'credit',
+    items,
+    total,
+    discount,
+    finalTotal,
+    paymentMethod: order.paymentMethod ?? 'credit',
+    installments: order.installments ?? undefined,
+    promoCode: order.promoCode || undefined,
     status: normalizeStatus(order.status),
     createdAt: order.dataPedido,
   };
@@ -224,6 +236,8 @@ function toAdminOrder(order: ApiAdminOrder): AdminOrder {
     status: normalizeStatus(order.status),
     total: Number(order.total),
     shipping: Number(order.valorFrete),
+    paymentMethod: order.paymentMethod ?? 'credit',
+    installments: order.installments ?? undefined,
     items: order.itens.map((item) => ({
       productId: item.produtoId.toString(),
       name: item.nome ?? `Produto #${item.produtoId}`,
@@ -351,11 +365,21 @@ export const ordersApi = {
     const orders = await apiRequest<ApiOrder[]>('/Orders/my');
     return orders.map(toOrder);
   },
-  create(items: { productId: string; quantity: number; unitPrice: number }[]) {
+  create(
+    items: { productId: string; quantity: number; unitPrice: number }[],
+    options: {
+      promoCode?: string;
+      paymentMethod: 'debit' | 'credit' | 'pix';
+      installments?: number;
+    },
+  ) {
     return apiRequest<{ message: string; orderId: number; total: number }>('/Orders', {
       method: 'POST',
       body: JSON.stringify({
         valorFrete: 0,
+        promoCode: options.promoCode ?? '',
+        paymentMethod: options.paymentMethod,
+        installments: options.installments,
         itens: items.map((item) => ({
           produtoId: Number(item.productId),
           quantidade: item.quantity,

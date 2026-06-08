@@ -9,6 +9,9 @@ namespace EquipamentosMedicosApi.Models
         public string Status { get; set; } = "Pedente";
         public decimal Total { get; set; }
         public decimal ValorFrete { get; set; }
+        public string PaymentMethod { get; set; } = "credit";
+        public int? Installments { get; set; }
+        public string PromoCode { get; set; } = string.Empty;
 
         // Relacionamentos
         public User? Usuario {get; set;}

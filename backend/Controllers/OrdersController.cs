@@ -67,12 +67,38 @@ namespace EquipamentosMedicosApi.Controllers
                 product.Estoque = currentStock - item.Quantidade;
             }
 
+            var subtotal = request.Itens.Sum(i => i.PrecoUnitario * i.Quantidade);
+            var discount = 0m;
+            var paymentMethod = request.PaymentMethod.Trim().ToLower();
+
+            if (paymentMethod != "credit" && paymentMethod != "debit" && paymentMethod != "pix")
+                return BadRequest(new { message = "Forma de pagamento invalida." });
+
+            if (!string.IsNullOrWhiteSpace(request.PromoCode))
+            {
+                var promoCode = await _context.PromoCodes
+                    .FirstOrDefaultAsync(p => p.Code == request.PromoCode.Trim().ToUpper());
+
+                if (promoCode == null || !IsValidPromoCode(promoCode))
+                    return BadRequest(new { message = "Codigo promocional invalido." });
+
+                discount = promoCode.DiscountType == "percentage"
+                    ? subtotal * (promoCode.Discount / 100)
+                    : promoCode.Discount;
+
+                discount = Math.Min(discount, subtotal);
+                promoCode.UsageCount += 1;
+            }
+
             var order = new Order
             {
                 UsuarioId = userId,
                 DataPedido = DateTime.UtcNow,
                 Status = "Pendente",
                 ValorFrete = request.ValorFrete,
+                PaymentMethod = paymentMethod,
+                Installments = paymentMethod == "credit" ? request.Installments : null,
+                PromoCode = request.PromoCode.Trim().ToUpper(),
                 Itens = request.Itens.Select(i => new OrderItem
                 {
                     ProdutoId = i.ProdutoId,
@@ -81,7 +107,7 @@ namespace EquipamentosMedicosApi.Controllers
                 }).ToList()
             };
 
-            order.Total = order.Itens.Sum(i => i.PrecoUnitario * i.Quantidade) + request.ValorFrete;
+            order.Total = subtotal + request.ValorFrete - discount;
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
@@ -162,6 +188,10 @@ namespace EquipamentosMedicosApi.Controllers
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
                 return Unauthorized();
 
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.ID == userId);
+            if (user == null)
+                return Unauthorized();
+
             var orders = await _context.Orders
                 .Where(o => o.UsuarioId == userId)
                 .Include(o => o.Itens)
@@ -174,13 +204,22 @@ namespace EquipamentosMedicosApi.Controllers
                     o.Status,
                     o.Total,
                     o.ValorFrete,
+                    o.PaymentMethod,
+                    o.Installments,
+                    o.PromoCode,
                     Itens = o.Itens.Select(i => new
                     {
                         i.ProdutoId,
                         Nome = i.Produto != null ? i.Produto.Nome : string.Empty,
                         TipoProduto = i.Produto != null ? i.Produto.TipoProduto : "equipment",
                         i.Quantidade,
-                        i.PrecoUnitario
+                        i.PrecoUnitario,
+                        Status = i.Produto != null && i.Produto.TipoProduto == "course"
+                            ? _context.Students
+                                .Where(s => s.Email == user.Email && s.CourseId == i.ProdutoId.ToString())
+                                .Select(s => s.Status)
+                                .FirstOrDefault()
+                            : null
                     })
                 })
                 .ToListAsync();
@@ -204,6 +243,9 @@ namespace EquipamentosMedicosApi.Controllers
                     o.Status,
                     o.Total,
                     o.ValorFrete,
+                    o.PaymentMethod,
+                    o.Installments,
+                    o.PromoCode,
                     Usuario = o.Usuario == null ? null : new
                     {
                         id = o.Usuario.ID,
@@ -250,6 +292,22 @@ namespace EquipamentosMedicosApi.Controllers
                 return DateTime.SpecifyKind(parsed, DateTimeKind.Utc);
 
             return DateTime.UtcNow;
+        }
+
+        private static bool IsValidPromoCode(PromoCode promoCode)
+        {
+            if (!promoCode.IsActive)
+                return false;
+
+            if (promoCode.UsageLimit.HasValue && promoCode.UsageCount >= promoCode.UsageLimit.Value)
+                return false;
+
+            if (!DateOnly.TryParse(promoCode.StartDate, out var startDate) ||
+                !DateOnly.TryParse(promoCode.EndDate, out var endDate))
+                return false;
+
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            return today >= startDate && today <= endDate;
         }
     }
 }

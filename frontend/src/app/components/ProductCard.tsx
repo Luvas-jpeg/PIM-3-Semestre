@@ -6,6 +6,7 @@ import { Product } from '../context/CartContext';
 import { useCart } from '../context/CartContext';
 import { ShoppingCart, Calendar, MapPin, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatCurrency } from '../utils/formatters';
 
 interface ProductCardProps {
   product: Product;
@@ -86,7 +87,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-pink-600">
-              R$ {product.price.toFixed(2)}
+              {formatCurrency(product.price)}
             </p>
             {product.stock !== undefined && (
               <p className="text-xs text-gray-500">

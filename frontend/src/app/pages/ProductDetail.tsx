@@ -8,6 +8,7 @@ import { useAdmin } from '../context/AdminContext';
 import { useCart } from '../context/CartContext';
 import { ShoppingCart, Calendar, MapPin, User, Package, Award, Clock, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatCurrency } from '../utils/formatters';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -92,7 +93,7 @@ export default function ProductDetail() {
 
             <div className="flex items-baseline gap-2 mb-6">
               <span className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-pink-600">
-                R$ {product.price.toFixed(2)}
+                {formatCurrency(product.price)}
               </span>
               {product.stock !== undefined && (
                 <span className="text-gray-500">

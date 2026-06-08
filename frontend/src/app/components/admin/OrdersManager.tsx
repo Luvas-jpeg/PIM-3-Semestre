@@ -20,6 +20,12 @@ const statusClasses: Record<AdminOrder['status'], string> = {
   cancelled: 'bg-red-100 text-red-700',
 };
 
+const paymentLabels: Record<AdminOrder['paymentMethod'], string> = {
+  debit: 'Debito',
+  credit: 'Credito',
+  pix: 'PIX',
+};
+
 export function OrdersManager() {
   const { orders, updateOrderStatus } = useAdmin();
 
@@ -53,6 +59,7 @@ export function OrdersManager() {
                 <TableHead>Cliente</TableHead>
                 <TableHead>Itens</TableHead>
                 <TableHead>Total</TableHead>
+                <TableHead>Pagamento</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Data</TableHead>
               </TableRow>
@@ -78,7 +85,15 @@ export function OrdersManager() {
                       ))}
                     </div>
                   </TableCell>
-                  <TableCell>R$ {order.total.toFixed(2)}</TableCell>
+                  <TableCell>
+                    {order.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </TableCell>
+                  <TableCell>
+                    {paymentLabels[order.paymentMethod]}
+                    {order.paymentMethod === 'credit' && order.installments && order.installments > 1
+                      ? ` ${order.installments}x`
+                      : ''}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Badge className={statusClasses[order.status]}>

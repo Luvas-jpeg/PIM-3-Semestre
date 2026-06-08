@@ -1,11 +1,33 @@
 export const formatCPF = (value: string): string => {
-  const numbers = value.replace(/\D/g, '');
+  const numbers = value.replace(/\D/g, '').slice(0, 11);
 
   if (numbers.length <= 3) return numbers;
   if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
   if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`;
 
   return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`;
+};
+
+export const isValidCPF = (value: string): boolean => {
+  const cpf = value.replace(/\D/g, '');
+
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) {
+    return false;
+  }
+
+  const calculateDigit = (base: string, factor: number) => {
+    const total = base
+      .split('')
+      .reduce((sum, digit) => sum + Number(digit) * factor--, 0);
+    const rest = (total * 10) % 11;
+
+    return rest === 10 ? 0 : rest;
+  };
+
+  const firstDigit = calculateDigit(cpf.slice(0, 9), 10);
+  const secondDigit = calculateDigit(cpf.slice(0, 10), 11);
+
+  return firstDigit === Number(cpf[9]) && secondDigit === Number(cpf[10]);
 };
 
 export const formatPhone = (value: string): string => {

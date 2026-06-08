@@ -32,6 +32,9 @@ namespace EquipamentosMedicosApi.Controllers
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
                 return Conflict(new { message = "E-mail já cadastrado." });
 
+            if (!IsValidCpf(request.Cpf))
+                return BadRequest(new { message = "CPF invalido." });
+
             var user = new User
             {
                 Nome = request.Nome,
@@ -84,6 +87,9 @@ namespace EquipamentosMedicosApi.Controllers
             var email = request.Email.Trim();
             if (string.IsNullOrWhiteSpace(request.Nome) || string.IsNullOrWhiteSpace(email))
                 return BadRequest(new { message = "Nome e e-mail são obrigatórios." });
+
+            if (!IsValidCpf(request.Cpf))
+                return BadRequest(new { message = "CPF invalido." });
 
             var duplicatedEmail = await _context.Users
                 .AnyAsync(u => u.ID != userId && u.Email == email);
@@ -157,6 +163,31 @@ namespace EquipamentosMedicosApi.Controllers
                 ZipCode = user.ZipCode,
                 Role = user.Role
             };
+        }
+
+        private static bool IsValidCpf(string cpf)
+        {
+            var digits = new string(cpf.Where(char.IsDigit).ToArray());
+
+            if (digits.Length != 11 || digits.Distinct().Count() == 1)
+                return false;
+
+            static int CalculateDigit(string value, int factor)
+            {
+                var total = 0;
+
+                foreach (var digit in value)
+                    total += (digit - '0') * factor--;
+
+                var rest = (total * 10) % 11;
+                return rest == 10 ? 0 : rest;
+            }
+
+            var firstDigit = CalculateDigit(digits[..9], 10);
+            var secondDigit = CalculateDigit(digits[..10], 11);
+
+            return firstDigit == digits[9] - '0'
+                && secondDigit == digits[10] - '0';
         }
     }
 }

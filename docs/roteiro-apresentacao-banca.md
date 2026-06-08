@@ -68,7 +68,11 @@ Fala:
 
 As principais tabelas do sistema sao: Users, Products, Orders, OrderItems, PromoCodes, CourseClasses, Students e Enrollments.
 
-Essa modelagem foi pensada para representar tanto o fluxo de e-commerce quanto o fluxo de inscricao em cursos."
+Essa modelagem foi pensada para representar tanto o fluxo de e-commerce quanto o fluxo de inscricao em cursos.
+
+No diagrama, usamos a notacao pe de galinha para mostrar a cardinalidade dos relacionamentos. O lado com uma linha representa 'um', e o lado com o pe de galinha representa 'muitos'. Por isso, quando vemos Users ligado a Orders, a leitura e: um usuario pode realizar varios pedidos, mas cada pedido pertence a um usuario.
+
+Tambem existem tabelas intermediarias, como OrderItems e Enrollments. Elas ajudam a representar relacoes que, na pratica, poderiam ser muitos para muitos. Por exemplo, um pedido pode ter varios produtos, e um produto pode aparecer em varios pedidos. Para organizar isso no banco, usamos OrderItems entre Orders e Products."
 
 ### Slide 6 - Explicacao das Relacoes
 
@@ -80,7 +84,11 @@ Um usuario pode realizar varios pedidos, representados pela tabela Orders. Cada 
 
 Quando o produto e um curso, ele tambem se relaciona com uma turma, representada por CourseClasses. Quando o cliente compra esse curso, o sistema cria uma inscricao na tabela Enrollments e registra o aluno na tabela Students.
 
-Tambem temos a tabela PromoCodes, que representa cupons promocionais que podem ser aplicados aos pedidos."
+Tambem temos a tabela PromoCodes, que representa cupons promocionais que podem ser aplicados aos pedidos. Na modelagem documentada, um cupom pode ser usado em varios pedidos, mas cada pedido pode ter nenhum ou apenas um cupom aplicado.
+
+Resumindo as principais relacoes: Users possui varios Orders; Orders possui varios OrderItems; Products aparece em varios OrderItems; Products tambem pode possuir varias CourseClasses; CourseClasses possui varias Enrollments; Students possui varias Enrollments; e Orders tambem pode gerar varias Enrollments quando a compra envolve cursos.
+
+Caso aparecam campos adicionais na implementacao, como telefone ou endereco do usuario, eles sao detalhes complementares do cadastro e do checkout. Eles nao mudam os relacionamentos principais apresentados na modelagem."
 
 Transicao:
 

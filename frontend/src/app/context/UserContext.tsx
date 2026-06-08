@@ -25,6 +25,7 @@ export interface OrderItem {
   price: number;
   quantity: number;
   type: 'equipment' | 'course';
+  status?: 'active' | 'completed' | 'cancelled';
 }
 
 export interface Order {
@@ -187,7 +188,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
         productId: item.id,
         quantity: item.quantity,
         unitPrice: item.price,
-      }))
+      })),
+      {
+        promoCode: orderData.promoCode,
+        paymentMethod: orderData.paymentMethod,
+        installments: orderData.installments,
+      },
     );
 
     await refreshOrders();

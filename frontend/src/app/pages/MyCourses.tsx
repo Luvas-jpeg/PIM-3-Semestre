@@ -7,6 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { useAdmin } from '../context/AdminContext';
 import { useUser } from '../context/UserContext';
 
+const courseStatusLabels: Record<string, string> = {
+  active: 'Ativo',
+  completed: 'Concluido',
+  cancelled: 'Cancelado',
+};
+
 export default function MyCourses() {
   const navigate = useNavigate();
   const { isAuthenticated, orders } = useUser();
@@ -33,7 +39,7 @@ export default function MyCourses() {
         ...item,
         product: products.find((product) => product.id === item.id),
         orderId: order.id,
-        status: order.status,
+        status: item.status ?? order.status,
         createdAt: order.createdAt,
       }))
   );
@@ -65,7 +71,7 @@ export default function MyCourses() {
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <CardTitle className="text-lg">{course.name}</CardTitle>
-                    <Badge>{course.status}</Badge>
+                    <Badge>{courseStatusLabels[course.status] ?? course.status}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">

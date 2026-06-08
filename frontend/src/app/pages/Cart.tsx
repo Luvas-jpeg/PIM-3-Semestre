@@ -6,6 +6,7 @@ import { Separator } from '../components/ui/separator';
 import { useCart } from '../context/CartContext';
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatCurrency } from '../utils/formatters';
 
 export default function Cart() {
   const navigate = useNavigate();
@@ -125,11 +126,11 @@ export default function Cart() {
                         {/* Price */}
                         <div className="text-right">
                           <p className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-pink-600">
-                            R$ {(item.price * item.quantity).toFixed(2)}
+                            {formatCurrency(item.price * item.quantity)}
                           </p>
                           {item.quantity > 1 && (
                             <p className="text-sm text-gray-500">
-                              R$ {item.price.toFixed(2)} cada
+                              {formatCurrency(item.price)} cada
                             </p>
                           )}
                         </div>
@@ -164,7 +165,7 @@ export default function Cart() {
                         {item.name} ({item.quantity}x)
                       </span>
                       <span className="font-medium">
-                        R$ {(item.price * item.quantity).toFixed(2)}
+                        {formatCurrency(item.price * item.quantity)}
                       </span>
                     </div>
                   ))}
@@ -175,7 +176,7 @@ export default function Cart() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">R$ {total.toFixed(2)}</span>
+                    <span className="font-medium">{formatCurrency(total)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Frete</span>
@@ -188,7 +189,7 @@ export default function Cart() {
                 <div className="flex justify-between">
                   <span className="font-semibold">Total</span>
                   <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-pink-600">
-                    R$ {total.toFixed(2)}
+                    {formatCurrency(total)}
                   </span>
                 </div>
               </CardContent>

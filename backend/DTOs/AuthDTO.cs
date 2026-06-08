@@ -85,6 +85,9 @@ namespace EquipamentosMedicosApi.DTOs
     {
         public List<OrderItemDTO> Itens { get; set; } = new();
         public decimal ValorFrete { get; set; }
+        public string PromoCode { get; set; } = string.Empty;
+        public string PaymentMethod { get; set; } = "credit";
+        public int? Installments { get; set; }
     }
 
     public class OrderItemDTO
