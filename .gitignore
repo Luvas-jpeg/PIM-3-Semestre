@@ -2,7 +2,14 @@ bin/
 obj/
 node_modules/
 dist/
+build/
+.vite/
+coverage/
+*.db
+*.sqlite
+*.sqlite3
 .env
 .env.local
 .env.*.local
+backend/appsettings.Development.json
 backend/appsettings.Local.json

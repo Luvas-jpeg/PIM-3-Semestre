@@ -1,93 +1,124 @@
-# MediShop - PIM 3º Semestre
+# MediShop - PIM 3o Semestre
 
-MediShop é uma aplicação web para venda de equipamentos médicos e cursos presenciais na área da saúde. O projeto combina um frontend em React com uma API ASP.NET Core, usando PostgreSQL via Entity Framework Core.
+MediShop e uma aplicacao web full stack desenvolvida como projeto academico do PIM 3o Semestre. A plataforma simula um e-commerce para venda de equipamentos medicos e cursos presenciais na area da saude.
+
+O projeto possui frontend em React, backend em ASP.NET Core Web API, autenticacao JWT, banco de dados relacional com Entity Framework Core e painel administrativo para gestao de produtos, cursos, alunos, pedidos e cupons promocionais.
+
+> Este repositorio representa a versao academica/MVP do projeto. Uma evolucao para o PIM 4o Semestre esta planejada com foco em produto real, melhorias de seguranca, deploy, mobile, DevOps, pagamentos e SEO.
+
+## Objetivo
+
+Criar uma solucao digital para uma empresa ficticia/cliente do setor de saude, permitindo:
+
+- Exibir equipamentos medicos e cursos presenciais.
+- Permitir cadastro e login de usuarios.
+- Gerenciar carrinho de compras.
+- Registrar pedidos.
+- Aplicar cupons promocionais.
+- Administrar produtos, cursos, alunos e pedidos.
+- Demonstrar integracao entre frontend, backend e banco de dados.
 
 ## Funcionalidades
 
-- Catálogo público de equipamentos e cursos.
-- Busca e filtro por tipo de item.
-- Detalhe de produto/curso.
-- Carrinho de compras persistido no navegador.
-- Cadastro e login com autenticação JWT.
-- Fechamento de pedido somente para usuários autenticados.
-- Painel administrativo para criar, editar e excluir equipamentos e cursos.
+### Area do cliente
+
+- Catalogo de produtos e cursos.
+- Busca e filtros por tipo de item.
+- Pagina de detalhes.
+- Carrinho persistido no navegador.
+- Cadastro e login.
+- Checkout com formas de pagamento simuladas.
+- Aplicacao de cupom promocional.
+- Perfil do usuario.
+- Historico de pedidos.
+- Visualizacao de cursos adquiridos.
+
+### Area administrativa
+
+- CRUD de equipamentos.
+- CRUD de cursos.
+- Gerenciamento de alunos.
+- Gerenciamento de cupons promocionais.
+- Acompanhamento de pedidos.
+- Controle basico de usuarios autenticados.
 
 ## Tecnologias
 
-| Camada | Tecnologia |
+| Camada | Tecnologias |
 | --- | --- |
-| Frontend | React, Vite, Tailwind CSS, Radix UI, lucide-react |
+| Frontend | React, TypeScript, Vite, Tailwind CSS, Radix UI, lucide-react |
 | Backend | ASP.NET Core Web API, C# |
 | Banco de dados | PostgreSQL |
 | ORM | Entity Framework Core |
-| Autenticação | JWT + BCrypt |
+| Autenticacao | JWT, BCrypt |
+| Documentacao | Markdown |
 
-## Estrutura do Projeto
+## Estrutura
 
-```text
+```txt
 .
-├── backend/              # API ASP.NET Core
-│   ├── Controllers/      # Auth, Products e Orders
-│   ├── Data/             # AppDbContext
-│   ├── DTOs/             # Contratos de entrada/saida
-│   ├── Migrations/       # Migrations do Entity Framework
-│   └── Models/           # Entidades do dominio
-├── frontend/             # Aplicacao React/Vite
-│   ├── src/app/components
-│   ├── src/app/context
-│   ├── src/app/lib       # Cliente HTTP da API
-│   └── src/app/pages
-└── PIM-3-Semestre.sln
+|-- backend/              # API ASP.NET Core
+|   |-- Controllers/      # Rotas da API
+|   |-- Data/             # DbContext
+|   |-- DTOs/             # Contratos de entrada e saida
+|   |-- Migrations/       # Migrations do Entity Framework
+|   |-- Models/           # Entidades do dominio
+|   `-- Program.cs        # Configuracao da aplicacao
+|
+|-- frontend/             # Aplicacao React/Vite
+|   |-- src/app/components
+|   |-- src/app/context
+|   |-- src/app/lib
+|   |-- src/app/pages
+|   `-- src/app/routes.tsx
+|
+|-- docs/                 # Roteiros e documentos de apoio
+`-- PIM-3-Semestre.sln
 ```
 
-## Pré-requisitos
+## Pre-requisitos
 
-- .NET SDK 10.
-- Node.js 20 ou superior. Use `nvm use` na raiz do projeto para carregar a versão do `.nvmrc`.
-- PostgreSQL acessível pela connection string do backend.
+- .NET SDK compativel com o projeto.
+- Node.js 20 ou superior.
+- PostgreSQL.
+- Git.
 
-## Configuração do Backend
+Use a versao de Node indicada em `.nvmrc`, quando aplicavel.
 
-O backend não deve versionar credenciais reais. Configure a connection string e o segredo JWT por variável de ambiente, user-secrets ou `backend/appsettings.Development.json`.
+## Configuracao do backend
 
-Exemplo com variáveis de ambiente:
+O backend nao deve versionar credenciais reais. Configure a connection string e o segredo JWT por variaveis de ambiente, user-secrets ou arquivo local nao versionado.
+
+Exemplo de variaveis de ambiente:
 
 ```bash
-ConnectionStrings__DefaultConnection="Server=localhost;Port=5432;Database=medishop;User Id=postgres;Password=postgres;Include Error Detail=true;" \
-Jwt__Secret="TroquePorUmaChaveLocalComMaisDe32Caracteres" \
+ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=medishop;Username=postgres;Password=postgres"
+Jwt__Secret="TroquePorUmaChaveLocalComMaisDe32Caracteres"
+```
+
+Tambem existe um modelo em:
+
+```txt
+backend/appsettings.Example.json
+```
+
+Para rodar o backend:
+
+```bash
 dotnet run --project backend/backend.csproj
 ```
 
-Também existe um modelo em `backend/appsettings.Example.json`:
+Por padrao, a API roda em:
 
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=...;Port=5432;Database=...;User Id=...;Password=...;"
-  }
-}
-```
-
-Se credenciais reais já tiverem sido compartilhadas ou commitadas, gere uma nova senha no provedor do banco antes de usar o projeto novamente.
-
-Ao iniciar, a API executa automaticamente as migrations:
-
-```bash
-dotnet run --project backend/backend.csproj
-```
-
-Por padrão, a API sobe em:
-
-```text
+```txt
 http://localhost:5278
 ```
 
-## Configuração do Frontend
+## Configuracao do frontend
 
-Instale as dependências:
+Instale as dependencias:
 
 ```bash
-nvm use
 cd frontend
 npm install
 ```
@@ -98,110 +129,42 @@ Rode o servidor de desenvolvimento:
 npm run dev
 ```
 
-Por padrão, o frontend sobe em:
+Por padrao, o frontend roda em:
 
-```text
+```txt
 http://localhost:5173
 ```
 
-O frontend usa `http://localhost:5278/api` como URL padrão da API. Para alterar:
+A URL da API pode ser configurada com:
 
-```bash
-VITE_API_BASE_URL=http://localhost:5278/api npm run dev
+```txt
+VITE_API_BASE_URL=http://localhost:5278/api
 ```
 
-Você também pode copiar `frontend/.env.example` para `.env.local` e ajustar `VITE_API_BASE_URL`.
+## Endpoints principais
 
-## Como Rodar o Projeto
-
-Em um terminal, inicie o backend:
-
-```bash
-ConnectionStrings__DefaultConnection="Server=localhost;Port=5432;Database=medishop;User Id=postgres;Password=postgres;Include Error Detail=true;" \
-Jwt__Secret="TroquePorUmaChaveLocalComMaisDe32Caracteres" \
-dotnet run --project backend/backend.csproj
-```
-
-Em outro terminal, inicie o frontend:
-
-```bash
-nvm use
-cd frontend
-npm run dev
-```
-
-Acesse:
-
-```text
-http://localhost:5173
-```
-
-## Endpoints Principais
-
-### Autenticação
-
-| Método | Rota | Descrição |
+| Metodo | Rota | Descricao |
 | --- | --- | --- |
-| POST | `/api/Auth/cadastrar` | Cria um novo usuário |
-| POST | `/api/Auth/login` | Autentica e retorna JWT |
+| POST | `/api/Auth/cadastrar` | Cria usuario |
+| POST | `/api/Auth/login` | Autentica usuario |
+| GET | `/api/Products` | Lista produtos/cursos |
+| GET | `/api/Products/{id}` | Busca produto/curso por ID |
+| POST | `/api/Products` | Cria produto/curso |
+| PUT | `/api/Products/{id}` | Atualiza produto/curso |
+| DELETE | `/api/Products/{id}` | Remove produto/curso |
+| POST | `/api/Orders` | Cria pedido |
+| GET | `/api/Orders/my` | Lista pedidos do usuario |
+| GET | `/api/Students` | Lista alunos |
+| POST | `/api/Students` | Cria aluno |
+| PUT | `/api/Students/{id}` | Atualiza aluno |
+| DELETE | `/api/Students/{id}` | Remove aluno |
+| GET | `/api/PromoCodes` | Lista cupons |
+| GET | `/api/PromoCodes/validate` | Valida cupom |
+| POST | `/api/PromoCodes` | Cria cupom |
+| PUT | `/api/PromoCodes/{id}` | Atualiza cupom |
+| DELETE | `/api/PromoCodes/{id}` | Remove cupom |
 
-### Produtos e Cursos
-
-| Método | Rota | Descrição |
-| --- | --- | --- |
-| GET | `/api/Products` | Lista todos os produtos/cursos |
-| GET | `/api/Products?tipo=equipment` | Lista equipamentos |
-| GET | `/api/Products?tipo=course` | Lista cursos |
-| GET | `/api/Products/{id}` | Busca item por ID |
-| POST | `/api/Products` | Cria item autenticado |
-| PUT | `/api/Products/{id}` | Atualiza item autenticado |
-| DELETE | `/api/Products/{id}` | Remove item autenticado |
-
-### Pedidos
-
-| Método | Rota | Descrição |
-| --- | --- | --- |
-| POST | `/api/Orders` | Cria pedido autenticado |
-| GET | `/api/Orders/my` | Lista pedidos do usuário autenticado |
-
-### Alunos
-
-| Método | Rota | Descrição |
-| --- | --- | --- |
-| GET | `/api/Students` | Lista alunos, requer autenticação |
-| POST | `/api/Students` | Cria aluno, requer autenticação |
-| PUT | `/api/Students/{id}` | Atualiza aluno, requer autenticação |
-| DELETE | `/api/Students/{id}` | Remove aluno, requer autenticação |
-
-### Cupons Promocionais
-
-| Método | Rota | Descrição |
-| --- | --- | --- |
-| GET | `/api/PromoCodes` | Lista cupons, requer autenticação |
-| GET | `/api/PromoCodes/validate?code=CODIGO` | Valida cupom no checkout |
-| POST | `/api/PromoCodes` | Cria cupom, requer autenticação |
-| PUT | `/api/PromoCodes/{id}` | Atualiza cupom, requer autenticação |
-| POST | `/api/PromoCodes/{id}/use` | Incrementa uso do cupom, requer autenticação |
-| DELETE | `/api/PromoCodes/{id}` | Remove cupom, requer autenticação |
-
-## Fluxo da Aplicação
-
-1. O usuário navega pelo catálogo sem login.
-2. O usuário adiciona equipamentos ou cursos ao carrinho.
-3. O carrinho fica salvo no navegador.
-4. Ao finalizar a compra, se não estiver autenticado, o usuário é enviado para login/cadastro.
-5. Após autenticação, o carrinho continua disponível.
-6. O frontend envia o pedido para a API com o JWT.
-7. A API grava o pedido e seus itens no banco.
-
-## Observações
-
-- O painel administrativo ainda não possui controle de perfil. Qualquer usuário autenticado consegue usar as rotas protegidas de produtos.
-- O painel administrativo agora depende da API para produtos, alunos e cupons; se o backend estiver fora do ar, a interface exibe erro em vez de usar dados mockados.
-- O arquivo `backend/medishop.db` existe no repositório, mas a aplicação atual usa PostgreSQL via Npgsql.
-- As imagens iniciais dos produtos usam URLs externas.
-
-## Verificação
+## Verificacao
 
 Backend:
 
@@ -215,3 +178,36 @@ Frontend:
 cd frontend
 npm run build
 ```
+
+## Observacoes de seguranca
+
+- Nao versionar senhas, tokens, secrets ou connection strings reais.
+- Usar variaveis de ambiente ou user-secrets para configuracoes sensiveis.
+- Trocar qualquer senha que ja tenha sido commitada antes de publicar o repositorio.
+- Nao armazenar dados de cartao no sistema.
+- Para uma versao comercial, integrar pagamentos por gateway externo e webhook.
+
+## Limitacoes conhecidas
+
+- O checkout atual e academico/simulado.
+- A integracao real com pagamento ainda nao foi implementada.
+- O design sera revisado na evolucao do PIM 4o Semestre.
+- O SEO ainda precisa ser preparado para uma versao publica.
+- O controle de permissoes pode ser fortalecido para producao.
+- O projeto ainda precisa de uma estrategia formal de deploy, backup e monitoramento.
+
+## Evolucao prevista para o PIM 4
+
+- Redesign da interface.
+- Melhorias no backend .NET.
+- App mobile.
+- Integracao com pagamento externo.
+- Preparacao para hospedagem em VPS.
+- SEO tecnico.
+- Documentacao de projeto agil.
+- Plano de negocio e proposta comercial.
+- Melhorias de seguranca e permissao.
+
+## Licenca
+
+Projeto desenvolvido para fins academicos.
